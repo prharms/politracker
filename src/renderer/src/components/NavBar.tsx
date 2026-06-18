@@ -4,9 +4,10 @@ import styles from './NavBar.module.css'
 
 const ROUTES = [
   { key: '1', label: 'HOME', path: '/' },
-  { key: '2', label: 'STAFF', path: '/staff' },
+  { key: '2', label: 'CLIENTS', path: '/clients' },
   { key: '3', label: 'PROJECTS', path: '/projects' },
-  { key: '4', label: 'TASKS', path: '/tasks' }
+  { key: '4', label: 'STAFF', path: '/staff' },
+  { key: '5', label: 'TASKS', path: '/tasks' }
 ]
 
 /** Top navigation bar with number-key shortcuts. */

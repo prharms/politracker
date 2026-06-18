@@ -18,7 +18,10 @@ const stubProject: ProjectDto = {
 const mockRepo: ProjectRepositoryPort = {
   listAll: vi.fn().mockReturnValue([stubProject]),
   findById: vi.fn().mockReturnValue(null),
-  create: vi.fn()
+  create: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  countSubjects: vi.fn().mockReturnValue(0)
 }
 
 describe('ListProjectsUseCase', () => {

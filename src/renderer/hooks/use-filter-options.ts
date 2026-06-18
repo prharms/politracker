@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { staffApi } from '../api/staff-api'
+import { apiListStaff } from '../api/staff-api'
 import { projectsApi } from '../api/projects-api'
 import type { StaffDto } from '../../shared/dtos/staff-dto'
 import type { ProjectDto } from '../../shared/dtos/project-dto'
@@ -15,7 +15,7 @@ export function useFilterOptions(): {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([staffApi.list(), projectsApi.list()]).then(([s, p]) => {
+    Promise.all([apiListStaff(), projectsApi.list()]).then(([s, p]) => {
       setStaff(s)
       setProjects(p)
       setLoading(false)

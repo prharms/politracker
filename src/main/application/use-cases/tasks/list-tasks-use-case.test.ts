@@ -31,7 +31,10 @@ const mockRepo: TaskRepositoryPort = {
   list: vi.fn().mockReturnValue([stubTask]),
   findById: vi.fn().mockReturnValue(null),
   create: vi.fn(),
-  updateStatus: vi.fn()
+  update: vi.fn(),
+  updateStatus: vi.fn(),
+  delete: vi.fn(),
+  countByStaff: vi.fn().mockReturnValue(0)
 }
 
 describe('ListTasksUseCase', () => {

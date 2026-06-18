@@ -19,9 +19,20 @@ describe('StaffRepository', () => {
   it('create persists a staff record and returns it', () => {
     const result = repo.create({ name: 'Alice', status: 'Active' })
     expect(result.name).toBe('Alice')
+    expect(result.initials).toBe('A')
     expect(result.status).toBe('Active')
     expect(typeof result.id).toBe('string')
     expect(typeof result.createdAt).toBe('string')
+  })
+
+  it('create derives initials from name when not provided', () => {
+    const result = repo.create({ name: 'Paul Harms', status: 'Active' })
+    expect(result.initials).toBe('PH')
+  })
+
+  it('create uses provided initials when given', () => {
+    const result = repo.create({ name: 'Paul Harms', initials: 'PHX', status: 'Active' })
+    expect(result.initials).toBe('PHX')
   })
 
   it('listAll returns all created staff ordered by name', () => {
@@ -43,6 +54,24 @@ describe('StaffRepository', () => {
     expect(repo.findById('nonexistent')).toBeNull()
   })
 
+  it('update changes the name and re-derives initials', () => {
+    const created = repo.create({ name: 'Carol Smith', status: 'Active' })
+    const updated = repo.update(created.id, { name: 'Carol Jones' })
+    expect(updated.name).toBe('Carol Jones')
+    expect(updated.initials).toBe('CJ')
+  })
+
+  it('update can change initials independently', () => {
+    const created = repo.create({ name: 'Dave Brown', status: 'Active' })
+    const updated = repo.update(created.id, { initials: 'DB2' })
+    expect(updated.initials).toBe('DB2')
+    expect(updated.name).toBe('Dave Brown')
+  })
+
+  it('update throws when record does not exist', () => {
+    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow('Staff record not found')
+  })
+
   it('updateStatus changes the status of the given record', () => {
     const created = repo.create({ name: 'Carol', status: 'Active' })
     const updated = repo.updateStatus(created.id, 'Inactive')
@@ -55,5 +84,15 @@ describe('StaffRepository', () => {
     const updated = repo.updateStatus(created.id, 'Active')
     expect(updated.name).toBe('Dave')
     expect(updated.status).toBe('Active')
+  })
+
+  it('delete removes the record', () => {
+    const created = repo.create({ name: 'Eve', status: 'Active' })
+    repo.delete(created.id)
+    expect(repo.findById(created.id)).toBeNull()
+  })
+
+  it('delete on nonexistent id does not throw', () => {
+    expect(() => repo.delete('nonexistent')).not.toThrow()
   })
 })

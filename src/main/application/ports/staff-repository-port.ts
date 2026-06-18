@@ -1,4 +1,4 @@
-import type { StaffDto, NewStaffInput } from '../../../shared/dtos/staff-dto'
+import type { StaffDto, NewStaffInput, UpdateStaffInput } from '../../../shared/dtos/staff-dto'
 
 /** Repository port for staff persistence. */
 export interface StaffRepositoryPort {
@@ -11,6 +11,12 @@ export interface StaffRepositoryPort {
   /** Persist a new staff record and return it. */
   create(input: NewStaffInput): StaffDto
 
+  /** Update a staff member's name and/or initials and return the updated record. */
+  update(id: string, input: UpdateStaffInput): StaffDto
+
   /** Update a staff member's active status and return the updated record. */
   updateStatus(id: string, status: 'Active' | 'Inactive'): StaffDto
+
+  /** Delete a staff member by id. */
+  delete(id: string): void
 }

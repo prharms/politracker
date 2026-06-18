@@ -79,8 +79,8 @@ switch ($Target) {
     "test-all"    { npm run test; if ($LASTEXITCODE -eq 0) { npm run "test:e2e" } }
     "dev"         { npm run dev }
     "build"       { npm run build }
-    "migration"   { npm run migration }
-    "db-upgrade"  { npm run "db-upgrade" }
+    "migration"   { npm run rebuild:node; npm run migration }
+    "db-upgrade"  { npm run rebuild:node; npm run "db-upgrade" }
     "coverage"    { npx vitest run --coverage --reporter=html }
     "help" {
         Write-Host ""

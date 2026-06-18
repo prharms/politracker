@@ -1,20 +1,36 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
 import { openDatabase } from './infrastructure/db/database'
+import {
+  makeListClientsUseCase,
+  makeCreateClientUseCase,
+  makeUpdateClientUseCase,
+  makeDeleteClientUseCase,
+  makeListSubjectsUseCase,
+  makeCreateSubjectUseCase,
+  makeUpdateSubjectUseCase,
+  makeDeleteSubjectUseCase,
+  makeListStaffUseCase,
+  makeCreateStaffUseCase,
+  makeUpdateStaffUseCase,
+  makeUpdateStaffStatusUseCase,
+  makeDeleteStaffUseCase,
+  makeListProjectsUseCase,
+  makeCreateProjectUseCase,
+  makeUpdateProjectUseCase,
+  makeDeleteProjectUseCase,
+  makeListTasksUseCase,
+  makeCreateTaskUseCase,
+  makeUpdateTaskUseCase,
+  makeDeleteTaskUseCase
+} from './container'
+import { registerAllHandlers } from './ipc/index'
 
 // Store the database in Local AppData, not Roaming.
 // Roaming is synced across machines on domain networks, which can corrupt a live SQLite file.
 if (process.env['LOCALAPPDATA']) {
   app.setPath('userData', path.join(process.env['LOCALAPPDATA'], 'Politicket'))
 }
-import {
-  makeListStaffUseCase,
-  makeCreateStaffUseCase,
-  makeUpdateStaffStatusUseCase,
-  makeListProjectsUseCase,
-  makeListTasksUseCase
-} from './container'
-import { registerAllHandlers } from './ipc/index'
 
 /** Create the main application window. */
 function createWindow(): void {
@@ -45,24 +61,36 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const db = openDatabase()
   registerAllHandlers(
+    makeListClientsUseCase(db),
+    makeCreateClientUseCase(db),
+    makeUpdateClientUseCase(db),
+    makeDeleteClientUseCase(db),
+    makeListSubjectsUseCase(db),
+    makeCreateSubjectUseCase(db),
+    makeUpdateSubjectUseCase(db),
+    makeDeleteSubjectUseCase(db),
     makeListStaffUseCase(db),
     makeCreateStaffUseCase(db),
+    makeUpdateStaffUseCase(db),
     makeUpdateStaffStatusUseCase(db),
+    makeDeleteStaffUseCase(db),
     makeListProjectsUseCase(db),
-    makeListTasksUseCase(db)
+    makeCreateProjectUseCase(db),
+    makeUpdateProjectUseCase(db),
+    makeDeleteProjectUseCase(db),
+    makeListTasksUseCase(db),
+    makeCreateTaskUseCase(db),
+    makeUpdateTaskUseCase(db),
+    makeDeleteTaskUseCase(db)
   )
   Menu.setApplicationMenu(null)
   createWindow()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    }
+    if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  if (process.platform !== 'darwin') app.quit()
 })

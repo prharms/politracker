@@ -5,6 +5,7 @@ import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
 const stubRecord = {
   id: 'abc',
   name: 'Alice',
+  initials: 'A',
   status: 'Inactive' as const,
   createdAt: '2026-01-01'
 }
@@ -13,7 +14,9 @@ const mockRepo: StaffRepositoryPort = {
   listAll: vi.fn().mockReturnValue([]),
   findById: vi.fn().mockReturnValue(null),
   create: vi.fn(),
-  updateStatus: vi.fn().mockReturnValue(stubRecord)
+  update: vi.fn().mockReturnValue(stubRecord),
+  updateStatus: vi.fn().mockReturnValue(stubRecord),
+  delete: vi.fn()
 }
 
 describe('UpdateStaffStatusUseCase', () => {

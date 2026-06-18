@@ -57,6 +57,7 @@ export const subjects = sqliteTable('subjects', {
 export const staff = sqliteTable('staff', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  initials: text('initials').notNull(),
   status: text('status').notNull(), // StaffStatus
   createdAt: text('created_at').notNull()
 })

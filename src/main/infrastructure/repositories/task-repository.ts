@@ -1,9 +1,14 @@
-import { eq, and } from 'drizzle-orm'
+import { eq, and, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
 import { tasks, subjects, projects, staff, deliverables } from '../db/schema'
 import type { TaskRepositoryPort } from '../../application/ports/task-repository-port'
-import type { TaskDto, TaskListFilters, NewTaskInput } from '../../../shared/dtos/task-dto'
+import type {
+  TaskDto,
+  TaskListFilters,
+  NewTaskInput,
+  UpdateTaskInput
+} from '../../../shared/dtos/task-dto'
 import type { TaskType, TaskStatus, TaskPriority, TaskCategory } from '../../../shared/constants'
 
 type TaskRow = {
@@ -95,11 +100,34 @@ export class TaskRepository implements TaskRepositoryPort {
     return this.findById(id)!
   }
 
+  /** Update task fields and return the updated enriched row. */
+  update(id: string, input: UpdateTaskInput): TaskDto {
+    const now = new Date().toISOString()
+    const current = this.findById(id)
+    if (!current) throw new Error(`Task record not found: ${id}`)
+    this.db
+      .update(tasks)
+      .set(buildTaskPatch(input, current, now))
+      .where(eq(tasks.id, id))
+      .run()
+    return this.findById(id)!
+  }
+
   /** Update the status (and closedAt) of a task and return the updated enriched row. */
   updateStatus(id: string, status: string, closedAt: string | null): TaskDto {
     const now = new Date().toISOString()
     this.db.update(tasks).set({ status, closedAt, updatedAt: now }).where(eq(tasks.id, id)).run()
     return this.findById(id)!
+  }
+
+  /** Delete a task by id. */
+  delete(id: string): void {
+    this.db.delete(tasks).where(eq(tasks.id, id)).run()
+  }
+
+  /** Return the total number of tasks assigned to a staff member. */
+  countByStaff(staffId: string): number {
+    return countByStaff(this.db, staffId)
   }
 }
 
@@ -173,4 +201,31 @@ function toDto(row: TaskRow): TaskDto {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
   }
+}
+
+/** Return true when the given status represents a closed/final state. */
+function isClosedStatus(status: string): boolean {
+  return status === 'Closed' || status === 'Final'
+}
+
+/** Build the column patch object for a task update. */
+function buildTaskPatch(input: UpdateTaskInput, current: TaskDto, now: string) {
+  const closedAt = input.status && isClosedStatus(input.status) ? now : current.closedAt
+  return {
+    title: input.title ?? current.title,
+    staffId: input.staffId !== undefined ? input.staffId : current.staffId,
+    status: input.status ?? current.status,
+    priority: input.priority ?? current.priority,
+    category: input.category ?? current.category,
+    dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate,
+    notes: input.notes !== undefined ? input.notes : current.notes,
+    closedAt,
+    updatedAt: now
+  }
+}
+
+/** Return the total number of tasks assigned to a staff member. */
+function countByStaff(db: BetterSQLite3Database, staffId: string): number {
+  const result = db.select({ value: count() }).from(tasks).where(eq(tasks.staffId, staffId)).get()
+  return result?.value ?? 0
 }
