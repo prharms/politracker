@@ -1,0 +1,72 @@
+---
+description: CRITICAL — All terminal commands must be PowerShell syntax. No Linux/bash commands. This machine runs Windows only.
+alwaysApply: true
+---
+
+# CRITICAL: PowerShell Only — No Linux Commands
+
+## ZERO DISCRETION POLICY
+
+This rule has no exceptions. There is no scenario — not familiarity with
+bash, not a "probably works" guess, not a complex command — that permits
+using bash syntax in this project.
+
+Prohibited judgement calls:
+- "I'll use `&&` — it might work." — No. Use `;`. Always.
+- "I'll use `cat <<'EOF'` for a multiline string." — No. This is bash heredoc syntax. It does not exist in PowerShell.
+- "I'll use `export VAR=value`." — No. Use `$env:VAR = "value"`.
+- "I'll use `.venv/bin/python`." — No. Use `.venv\Scripts\python`.
+- "I'll use `make lint`." — No. Use `./make.ps1 lint`.
+
+Before issuing any terminal command, mentally verify every token is
+valid PowerShell. If unsure about a construct, look it up or ask — do
+not guess and submit.
+
+---
+
+**This machine runs Windows. There is no Linux shell, no bash, no WSL. Using bash syntax will cause commands to fail.**
+
+This project runs on Windows. All terminal commands must use PowerShell syntax.
+
+## Critical differences
+
+| Task | PowerShell (correct) | Bash (never use) |
+|---|---|---|
+| Chain commands | `cmd1; cmd2` | `cmd1 && cmd2` |
+| Set env var | `$env:VAR = "value"` | `export VAR=value` |
+| Path separator | `\` or `/` (both work) | `/` only |
+| List files | `ls` or `dir` | `ls` |
+| Read file | `Get-Content file.txt` | `cat file.txt` |
+| Delete file | `Remove-Item file.txt` | `rm file.txt` |
+| Copy file | `Copy-Item src dst` | `cp src dst` |
+| Move file | `Move-Item src dst` | `mv src dst` |
+| Make directory | `New-Item -ItemType Directory dir` or `mkdir dir` | `mkdir dir` |
+
+## Rules — violation of any of these will break the command
+
+- **NEVER use `&&`** to chain commands — use `;` in PowerShell.
+- **NEVER use `export`** to set environment variables — use `$env:VAR = "value"`.
+- **NEVER assume a Unix shell** — no bash, no sh, no zsh.
+- **NEVER use `.venv/bin/`** — always use `.venv\Scripts\` for virtual environment binaries.
+- **NEVER use `make`** — always use `./make.ps1 <target>`.
+- **ALWAYS use `;`** to separate multiple commands in a single shell call.
+
+## Examples
+
+```powershell
+cd c:\Projects\prhrt\irs-data; .venv\Scripts\pytest.exe tests/ -v
+
+$env:LOG_LEVEL = "DEBUG"; .venv\Scripts\python.exe -m irs_data
+
+./make.ps1 lint
+./make.ps1 test
+```
+
+## Multiline git commit messages
+
+Heredocs (`<<'EOF'`) do not exist in PowerShell. Use a variable instead:
+
+```powershell
+$msg = "Short summary line`n`n- Detail one`n- Detail two`n- Detail three"
+git commit -m $msg
+```

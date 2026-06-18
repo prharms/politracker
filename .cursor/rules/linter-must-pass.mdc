@@ -1,0 +1,72 @@
+# Linter Suite Must Always Pass
+
+## ZERO DISCRETION POLICY
+
+This rule has no exceptions. There is no scenario - not urgency, not a
+"minor" change, not confidence that nothing broke - that permits
+declaring a task done without a passing linter suite in the current session.
+
+Prohibited judgement calls:
+- "The change is too small to affect lint." - No. Run `./make.ps1 lint` and observe the output.
+- "I'll add `// eslint-disable` to unblock progress." - No. Fix the code. Never suppress without an ADR-documented exception and explicit user approval.
+- "I'll add `@ts-ignore` or `@ts-expect-error` to suppress a type error." - No. Fix the type. Same rule as above.
+- "The JSDoc comment is obvious, I'll skip it." - No. Every public function and class gets a JSDoc comment.
+- "I'll fix the lint errors in a follow-up." - No. Fix them in the current task before marking done.
+
+If a lint error cannot be resolved, stop and ask. Do not suppress it.
+
+---
+
+The linter suite is run via `./make.ps1 lint` and must pass completely before
+any task is considered finished.
+
+## What the suite checks
+
+- `tsc --noEmit` - Type annotations. No missing or incompatible types.
+- `eslint` - Style, complexity (max 10), import order, security patterns,
+  JSDoc on public members.
+- `prettier --check` - Code formatting. Run `./make.ps1 format` to auto-fix.
+- `secretlint` - No secrets committed to source. Config in `.secretlintrc.json`.
+  Package: `secretlint` + `@secretlint/secretlint-rule-preset-recommend`.
+- `vitest run --coverage` - All tests pass, coverage thresholds met.
+
+## Running the suite
+
+```powershell
+./make.ps1 lint
+```
+
+Type checking only:
+```powershell
+./make.ps1 type-check
+```
+
+Style only:
+```powershell
+npx eslint .
+```
+
+Auto-fix formatting:
+```powershell
+./make.ps1 format
+```
+
+## Rules
+
+- After every code change, mentally verify all checks above will pass.
+- All exported functions, classes, and interfaces must have a JSDoc comment.
+- All functions must have explicit TypeScript return type annotations.
+- No function may exceed complexity 10 - split into smaller helpers if needed.
+- Never use `// eslint-disable`, `@ts-ignore`, or `@ts-expect-error` to
+  suppress errors, except for an exception that is already explicitly
+  documented in an ADR. Always ask before suppressing.
+- `any` type is banned. Use `unknown` and narrow, or define a proper type.
+  The ESLint rule `@typescript-eslint/no-explicit-any` is set to error.
+- If a lint error is introduced, fix it in the same task before marking
+  work done.
+
+## See also
+
+- Import layer rules enforced by ESLint: `clean-architecture-imports.mdc`
+- Test coverage requirements: `test-suite.mdc`
+- McCabe complexity rules: `mccabe-complexity.mdc`

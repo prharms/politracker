@@ -1,0 +1,100 @@
+---
+description: Academic-level hallucination prevention. All claims about the codebase must be grounded in evidence read from actual files.
+alwaysApply: true
+---
+
+# Anti-Hallucination Protocol
+
+## ZERO DISCRETION POLICY
+
+This protocol has no exceptions. There is no scenario — not a simple
+question, not a "I read this earlier in the session", not confidence in
+the answer — that permits making a claim without a cited source.
+
+Prohibited judgement calls:
+- "I remember reading this file earlier, I don't need to re-read it." — No. If the file may have changed, read it again.
+- "This is a straightforward question, I don't need to trace the call chain." — No. Read before claiming.
+- "I'm fairly confident this field exists." — No. Read the file and cite the line number.
+- "I'll answer now and verify if the user questions it." — No. Verify before answering.
+- "This is general Python/Flask knowledge, not codebase-specific." — Only acceptable for questions where the codebase is explicitly not the subject.
+- "This is just a planning response, not a code change." — No. Every command, path, or method name written in a planning response is a claim. Read the source before writing it.
+
+If you cannot cite a source, you must either read the relevant file
+immediately or explicitly label the claim as an unverified assumption
+and flag it before proceeding.
+
+---
+
+Every claim about the codebase must have a cited source (file + line number). Unsourced claims are treated as errors. If a source cannot be cited, the claim must be explicitly labeled as an inference or assumption and verified before acting on it.
+
+## Core rule
+
+**Never make a claim about this codebase without having read the relevant code first.**
+
+This applies to:
+- How a route works
+- What a function does
+- What fields exist on a model or DTO
+- What a configuration value is
+- What a test covers
+- What a CLI command does and how it is invoked (name, group, entry point, flags)
+- What the database schema contains
+- Any command, path, or method name included in a planning or "next steps" response
+
+If you have not read it, say "I need to check" and read it before answering.
+
+## HTML template copy is subject to the same standard
+
+Any sentence written into a Jinja2 template that describes how data was collected,
+what a field or classification means, what a threshold is, or how a calculation works
+is a claim about the codebase. It must meet the same evidence standard as a claim
+made in a code review or technical response.
+
+Before writing any explanatory text in a template:
+- If it describes a data source or form type: read the repository or use case that queries it.
+- If it describes a classification (e.g. what "neutral" means in a position record): read the prompt or domain logic that defines the classification.
+- If it describes a threshold or filter (e.g. "$10,000 minimum"): read the domain rule or query helper that enforces it.
+- If it describes what a user should or should not conclude: that conclusion must be derivable from read evidence, not from general knowledge about the subject matter.
+
+Writing template copy from memory or general knowledge and verifying only when questioned
+is a protocol violation. The verification happens before writing, not after.
+
+## Three-step verification protocol
+
+When answering any non-trivial technical question or completing a code change, apply this protocol:
+
+1. **Trace** — Read all relevant files, routes, and call chains before forming an answer. Do not answer from memory of previous reads in the same session without re-verifying if the file may have changed.
+2. **Verify** — State your reasoning step-by-step, citing specific line numbers or file paths for each claim.
+3. **Challenge** — Explicitly list at least three ways you may have hallucinated or made an unverified assumption. If none are found, state that and explain why.
+
+## Mandatory read-before-claim rules
+
+- Before describing how a route works: read the route file and trace the full call chain to the repository.
+- Before describing what a use case does: read the use case file.
+- Before claiming a field exists on a model, ORM class, or DTO: read the file that defines it.
+- Before suggesting a code change: read the file you are about to change.
+- Before claiming a test covers something: read the test file.
+- Before describing what a CLI command does: read the command implementation.
+
+## Prohibited behaviors
+
+- Do not answer security, architecture, or data questions from general Python/Flask/SQLAlchemy knowledge without verifying against the actual implementation.
+- Do not invent method names, field names, file paths, or configuration values.
+- Do not say "this should work" without having traced the actual execution path.
+- Do not reuse a read from earlier in a session to answer a new question if the file has been edited since.
+- Do not omit uncertainty — if a claim is inferred rather than read, label it explicitly as an inference.
+- Do not include a command, file path, or method name in a planning response, "what is next" answer, or workflow sequence without a cited source. Planning responses are not exempt from the read-before-claim rule.
+
+## Distinguishing evidence tiers
+
+When making a claim, be explicit about the evidence tier:
+
+| Tier | Meaning |
+|---|---|
+| **Read** | Directly read from a file in this session — cite file and line |
+| **Inferred** | Logical deduction from read evidence — state the reasoning |
+| **Assumed** | Not yet verified — flag and verify before proceeding |
+
+## Scope
+
+This protocol applies to all technical claims. It does not apply to general knowledge questions (e.g. "what is SQLAlchemy?") where the codebase is not the subject.

@@ -1,0 +1,73 @@
+# Database Migrations
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "tiny"
+column addition, not a development-only change, not time pressure -
+that permits skipping a migration.
+
+Prohibited judgement calls:
+- "It's just a nullable column, I'll skip the migration." - No. Every schema change gets a migration.
+- "I'll add the migration later." - No. The migration is committed in the same task as the schema change.
+- "I'll edit the existing migration to fix it." - No. If it has been applied, create a new one.
+- "The generated SQL looks mostly right, I'll apply it without reading it." - No. Read every statement before applying.
+- "I'll write the migration file myself." - No. Always run `drizzle-kit generate`. Manually written migrations have unpredictable ordering.
+- "I know what the migration should contain, I'll skip generate." - No. Use `drizzle-kit generate` even if you intend to edit the body. The filename and ordering must come from drizzle-kit.
+
+---
+
+## Schema definition
+
+The database schema lives in `src/main/infrastructure/db/schema.ts`.
+Every table and column is defined there using Drizzle's `sqliteTable` API.
+This is the single source of truth for the database structure.
+
+## Commands
+
+Generate a new migration after changing the schema:
+```powershell
+./make.ps1 migration
+```
+
+This runs `npx drizzle-kit generate` and writes a new SQL file to
+`migrations/`.
+
+Apply all pending migrations:
+```powershell
+./make.ps1 db-upgrade
+```
+
+This runs `npx drizzle-kit migrate`.
+
+Inspect migration status:
+```powershell
+npx drizzle-kit studio
+```
+
+## Workflow
+
+1. Make the change in `src/main/infrastructure/db/schema.ts`.
+2. Run `./make.ps1 migration`.
+3. Open the generated SQL file in `migrations/` and read every statement.
+   Confirm it matches the intended change. Drizzle-kit is reliable for
+   standard column additions, table creation, and index changes. Manually
+   verify column type changes and custom constraint changes.
+4. Run `./make.ps1 db-upgrade` to apply.
+5. Commit the schema change and the migration file together in the same commit.
+
+## Rules
+
+- Never add, remove, or rename a column or table in `schema.ts` without
+  also creating and applying a migration.
+- Never manually write a migration file.
+- Never edit a migration file that has already been applied.
+- Migration files are committed to source control alongside the schema change.
+- The `migrations/` directory must never have uncommitted migration files
+  when pushing a branch.
+- For integration tests: apply migrations to the in-memory test database
+  using Drizzle's migrate function in the test fixture setup.
+
+## See also
+
+Schema file: `src/main/infrastructure/db/schema.ts`
+Drizzle config: `drizzle.config.ts`

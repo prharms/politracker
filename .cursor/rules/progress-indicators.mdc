@@ -1,0 +1,44 @@
+---
+description: Any CLI operation expected to take more than 3 seconds must provide a progress indicator. Silent long-running commands are a bug.
+alwaysApply: true
+---
+
+# Progress Indicators Are Required for Long-Running CLI Commands
+
+A command that runs silently for more than 3 seconds is indistinguishable
+from a frozen program. This is a usability defect, not a cosmetic preference.
+
+## The rule
+
+Any CLI operation with an expected runtime over 3 seconds must provide
+one of the following:
+
+- A `click.progressbar` with a tick per unit of work (preferred when total
+  count is known before the work begins).
+- A per-item echo line with a running counter (when total count is unknown
+  until the work is done).
+- A spinner or "working..." echo followed by periodic status lines (for
+  operations that cannot be decomposed into discrete units).
+
+## What counts as "over 3 seconds"
+
+- Any operation that makes more than one HTTP request.
+- Any operation that reads or writes more than a few hundred database rows.
+- Any file system operation that processes more than a handful of files.
+- Any operation whose runtime scales with user data and is unbounded.
+
+## What is not required
+
+- Operations that are always fast regardless of data volume (e.g. `status`
+  reading a single aggregate query).
+- Operations where the total time is always under 1 second.
+
+## Prohibited
+
+- A command that emits "Starting..." and then goes silent until completion.
+- A command that only reports results after all work is done, with no
+  intermediate feedback, when the work takes more than 3 seconds.
+
+## See also
+
+`.cursor/skills/progress-indicators/SKILL.md` for implementation patterns.

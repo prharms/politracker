@@ -1,0 +1,68 @@
+# Shell Command Restrictions
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "quick check",
+not a one-liner, not familiarity with the syntax - that permits running
+Node.js inline in a shell command or reading file contents through PowerShell.
+
+Prohibited judgement calls:
+- "It's just a one-liner, I'll use `node -e` to run inline JavaScript." - No. Write a tool script in `tools/`.
+- "I'll use `Get-Content` to read this file." - No. Use the Read tool.
+- "I'll pipe `node -e` output through PowerShell for speed." - No. Tool script.
+- "I'll use `Select-String` to search file contents." - No. Use the Grep tool or a tool script.
+- "I'll use `cat` or `head` to peek at a file." - No. Use the Read tool.
+
+---
+
+## Rule 1 - No inline Node.js in shell commands
+
+JavaScript/TypeScript logic belongs in files, not in terminal arguments.
+
+```powershell
+# PROHIBITED - inline Node.js in shell command
+node -e "const fs = require('fs'); console.log(fs.readdirSync('.'))"
+
+# REQUIRED - write a tool script, then run it
+# tools/list-files.ts (create this file first)
+npx tsx tools/list-files.ts
+```
+
+This applies to:
+- `node -e "..."` one-liners
+- `node -e` piped into PowerShell
+- Any JavaScript expression passed as a shell argument
+
+**Why:** Inline Node.js cannot be reviewed, versioned, debugged, or reused.
+It also routinely fails due to quoting escapes in PowerShell, wasting time.
+
+## Rule 2 - No reading file contents via PowerShell
+
+File content must be read using the Read tool (for single files), the Grep
+tool (for pattern searches), or a TypeScript tool script (for bulk processing).
+
+```powershell
+# PROHIBITED
+Get-Content src\main\infrastructure\db\schema.ts
+Select-String "sqliteTable" src\**\*.ts
+
+# REQUIRED
+Read tool    -> for reading a specific file path
+Grep tool    -> for pattern searching across files
+tools/*.ts   -> for bulk processing (add progress reporting)
+```
+
+## Tool scripts
+
+Write tool scripts as TypeScript files in `tools/`. Run them with:
+```powershell
+npx tsx tools/my-script.ts
+```
+
+`tsx` is a dev dependency that runs TypeScript directly without a separate
+compile step.
+
+## See also
+
+- `powershell-only.mdc` - PowerShell syntax requirements for all terminal commands.
+- `progress-indicators.mdc` - progress reporting requirements for tool scripts.

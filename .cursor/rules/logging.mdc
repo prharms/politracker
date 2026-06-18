@@ -1,0 +1,84 @@
+# Logging
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not debugging
+urgency, not a "temporary" console.log, not low-sensitivity data -
+that permits violating these conventions.
+
+Prohibited judgement calls:
+- "I'll use `console.log` for quick debugging." - No. Use the logger.
+- "I'll use `console.error` in the IPC handler." - No. Use the logger.
+- "This value probably isn't sensitive." - No. If in doubt, do not log it.
+- "I'll log the error without the stack trace - the message is enough." - No. Always pass the error object so the stack trace is captured.
+- "I'll call `getLogger()` inside the function body." - No. Logger is module-level only.
+
+---
+
+## Tool
+
+This project uses `electron-log` for all logging.
+
+- In main process: import directly.
+- In renderer process: use `window.api.log.*` via the IPC bridge (the
+  renderer has no direct file system access for log files).
+
+```typescript
+// Main process - any file in src/main/
+import log from 'electron-log/main';
+
+log.info('Subject created: %s', subjectId);
+log.error('Failed to create subject', { error });
+```
+
+```typescript
+// Renderer process - use the IPC bridge
+window.api.log.info('Subject form submitted');
+window.api.log.error('IPC call failed', errorMessage);
+```
+
+Logs are written to file automatically by electron-log (in the Electron
+user data directory). Do not configure a custom log path unless explicitly
+required.
+
+## Log levels
+
+- `debug` - Query details, skipped records, internal state. High volume.
+  Off in production.
+- `info` - Significant state changes: record created, migration applied,
+  app started/ready.
+- `warn` - Unexpected but recoverable: malformed input, fallback used.
+- `error` - Caught exception that degraded functionality. Always include
+  the error object so the stack trace is captured.
+
+## Rules
+
+- Never log passwords, tokens, API keys, connection strings, or PII.
+- Always include the error object when logging at `error` level so
+  electron-log captures the stack trace:
+  ```typescript
+  log.error('Operation failed', { error, context });
+  ```
+- Use `%s`, `%d`, `%o` style substitution, or pass a context object as
+  the second argument. Avoid template literals in log calls.
+- No `console.log`, `console.warn`, `console.error`, or `console.debug`
+  in committed code. ESLint `no-console` rule is set to error.
+- `debug` logs inside tight loops are acceptable - they are off in
+  production by default.
+
+## Module-level logger
+
+Do not call `getLogger()` or create a logger inside a function body.
+Import `log` at the top of the module:
+
+```typescript
+import log from 'electron-log/main';
+
+export class SubjectRepository implements ISubjectRepository {
+  // use log directly - no constructor injection needed for electron-log
+}
+```
+
+## See also
+
+Error handling conventions: `error-handling.mdc`.

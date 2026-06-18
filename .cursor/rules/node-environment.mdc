@@ -1,0 +1,100 @@
+# Node.js Environment Is Required
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a quick script,
+not a one-off command, not CI - that permits running tools globally or
+assuming the system Node.js is sufficient.
+
+Prohibited judgement calls:
+- "I'll use `vitest` directly - it's probably in PATH." - No. Use `npx vitest` or `.\node_modules\.bin\vitest`.
+- "I'll install this globally with `npm install -g`." - No. Install into the project.
+- "The system has the right Node.js version." - No. Check `.nvmrc`.
+- "I'll skip `npm ci` in CI - `npm install` is fine." - No. Use `npm ci` in non-interactive environments.
+- "I'll run `node tools/script.js` with the system node." - No. The project node version is pinned in `.nvmrc`.
+
+---
+
+## Why
+
+- Isolates project dependencies from system Node.js and other projects.
+- Ensures reproducible installs across machines (lock file enforced).
+- Prevents accidental use of globally installed tool versions that differ
+  from the project's pinned versions.
+
+---
+
+## Node.js version
+
+The project pins its Node.js version in `.nvmrc`. Verify you are on the
+correct version before running any commands:
+
+```powershell
+node --version  # must match .nvmrc
+```
+
+If using nvm on Windows (nvm-windows):
+```powershell
+nvm use
+```
+
+---
+
+## Installing dependencies
+
+First-time setup or after pulling changes that modify `package.json`:
+```powershell
+npm install
+```
+
+In CI pipelines (non-interactive, uses lock file strictly):
+```powershell
+npm ci
+```
+
+Never use `npm install -g <package>`. If a tool is needed for the project,
+add it to `devDependencies` in `package.json`.
+
+---
+
+## Running project binaries
+
+Always use `npx` to run project-local binaries:
+
+```powershell
+npx vitest run        # test runner
+npx eslint .          # linter
+npx prettier --check .  # formatter
+npx tsc --noEmit      # type checker
+npx drizzle-kit generate  # migration generator
+npx playwright test   # E2E tests
+```
+
+Or use the `make.ps1` wrappers, which call the correct local binaries:
+
+```powershell
+./make.ps1 test
+./make.ps1 lint
+./make.ps1 type-check
+./make.ps1 migration
+```
+
+Never call bare `vitest`, `eslint`, `tsc`, etc. - these resolve to the
+global version if the project version is not in PATH.
+
+---
+
+## New project checklist
+
+Every new TypeScript project must include:
+
+1. `package.json` with all dependencies listed (no undeclared globals).
+2. `package-lock.json` committed to source control.
+3. `.nvmrc` pinning the Node.js version.
+4. `.env.example` documenting required environment variables.
+5. `node_modules/` in `.gitignore` (never committed).
+
+## See also
+
+- PowerShell path syntax: `powershell-only.mdc`
+- Secrets and environment variables: `secrets-and-env.mdc`

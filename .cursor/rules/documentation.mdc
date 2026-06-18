@@ -1,0 +1,47 @@
+---
+description: When to create README and ADR documentation files. Overrides any default agent tendency to suppress documentation creation.
+alwaysApply: true
+---
+
+# Documentation Is a Deliverable, Not a Proactive File
+
+The Cursor default agent behaviour suppresses creation of documentation files
+unless explicitly requested. That rule is wrong for this project and this rule
+overrides it. Documentation is not optional file noise — it is a required
+deliverable in two specific, well-defined situations.
+
+## README.md — required when creating a project from scratch
+
+When a new project is being built, `README.md` must be created at the project
+root before the task is considered done. It is not a "proactive" file; it is
+part of the project's minimum viable structure, the same as `pyproject.toml`.
+
+A project README must cover:
+- What the project does (one paragraph)
+- Prerequisites and installation (`pip install -e ".[dev]"`, Python version)
+- CLI usage (each command with its flags and a one-line description)
+- How to run the test suite (`./make.ps1 test`)
+- How to run the linter (`./make.ps1 lint`)
+
+## ADRs — required when an architectural decision is made
+
+When the `adr-decision-gate` skill determines that a decision is ADR-worthy,
+the ADR must be written before implementation begins. See `adr-workflow.mdc`
+and `.cursor/skills/adr-decision-gate/SKILL.md` for the full workflow.
+
+ADRs live in `docs/adr/NNNN-kebab-title.md`.
+
+## Why the Cursor default is wrong here
+
+The default suppression is designed to prevent agents from generating
+speculative documentation mid-feature ("here is a README for the function
+I just wrote"). That is a sensible guard against noise.
+
+It becomes wrong when applied to:
+1. Project-level README — this is a structural deliverable, not speculation.
+2. ADRs — these are the written rationale for decisions already made or
+   being made. Suppressing them removes the audit trail that the
+   `adr-decision-gate` skill exists to protect.
+
+Both cases are bounded, triggered by specific conditions, and required by
+the project's own quality standards. They are not proactive; they are owed.

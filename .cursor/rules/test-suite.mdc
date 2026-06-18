@@ -1,0 +1,164 @@
+# Test Suite Must Always Pass at 80% Coverage
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "trivial"
+change, not time pressure, not high confidence in the fix - that permits
+skipping targeted tests or declaring work done without observed green output.
+
+Prohibited judgement calls:
+- "The change is too small to break anything, I'll skip the targeted test run." - No. Run the targeted tests every time.
+- "I'll run tests at the end of the task, not after each fix." - No. Run targeted tests immediately after each fix.
+- "The full suite passed last time, it's probably fine." - No. Run it again in the current session.
+- "I'll delete this failing test - it's outdated." - No. Fix the test or the code. Never delete a test.
+- "I'll write `expect(true).toBe(true)` as a placeholder." - No. Tests must assert meaningful behavior.
+- "I'll use `describe.skip` or `it.skip` to silence a failure." - No. Fix it.
+
+Declaring a task done without having run and observed the targeted tests
+pass in the current session is a protocol violation.
+
+---
+
+## Commands
+
+Run full suite with coverage (required before any commit):
+```powershell
+./make.ps1 test
+```
+
+Run without coverage (faster, for quick iteration):
+```powershell
+./make.ps1 test-fast
+```
+
+Run end-to-end tests (Playwright, launches Electron):
+```powershell
+./make.ps1 test-e2e
+```
+
+Run all suites in sequence:
+```powershell
+./make.ps1 test-all
+```
+
+Run a specific test file:
+```powershell
+npx vitest run src/main/application/use-cases/get-subjects.test.ts
+```
+
+Run multiple specific files:
+```powershell
+npx vitest run src/main/application/use-cases/get-subjects.test.ts src/main/infrastructure/repositories/subject-repository.test.ts
+```
+
+---
+
+## Coverage thresholds
+
+Enforced by `@vitest/coverage-v8` in `vitest.config.ts`:
+
+- `src/main/` (business logic) - 80% lines, functions, branches, statements
+- `src/renderer/` (React components) - 70% lines, functions, branches, statements
+
+Coverage below threshold is a build failure. `./make.ps1 test` exits non-zero.
+
+Generate an HTML coverage report:
+```powershell
+./make.ps1 coverage
+```
+
+---
+
+## Test file conventions
+
+- Unit and integration test files: `src/**/*.test.ts` or `src/**/*.test.tsx`
+- E2E test files: `tests/e2e/**/*.spec.ts`
+- Test files live alongside the code they test (co-located), not in a
+  separate `tests/` directory (except E2E)
+
+```
+src/main/application/use-cases/
+  get-subjects.ts
+  get-subjects.test.ts    <- co-located
+src/renderer/components/
+  SubjectCard.tsx
+  SubjectCard.test.tsx    <- co-located
+```
+
+---
+
+## Test types
+
+**Unit tests** - Pure logic, no database, no IPC, no filesystem.
+Test use cases, domain entities, and pure utility functions in isolation.
+Use dependency injection to pass mock repositories.
+
+```typescript
+it('returns subjects sorted by name', () => {
+  const repo = mockSubjectRepository([subjectB, subjectA]);
+  const useCase = new GetSubjectsUseCase(repo);
+  const result = useCase.execute();
+  expect(result[0].name).toBe('Alpha Subject');
+});
+```
+
+**Integration tests** - Require a real (in-memory) SQLite database.
+Use better-sqlite3 with `':memory:'` and run Drizzle migrations in the
+test fixture setup. Test repositories and use cases against real SQL.
+
+```typescript
+beforeEach(() => {
+  db = new Database(':memory:');
+  drizzle(db).run(sql`...schema...`);
+});
+```
+
+**Component tests** - Render React components with React Testing Library.
+Assert on what the user sees and interacts with, not on implementation details.
+Mock `window.api.*` IPC calls in the test setup.
+
+```typescript
+it('shows subject name in the card', () => {
+  render(<SubjectCard subject={mockSubject} />);
+  expect(screen.getByText('John Smith')).toBeInTheDocument();
+});
+```
+
+**E2E tests** - Launch the full Electron application via Playwright.
+Test complete user workflows end-to-end against a test database.
+
+---
+
+## Rules
+
+- Every new module, use case, or repository must have a corresponding test
+  file before the task is done.
+- New code that is not covered by tests must include tests before the task
+  is done.
+- Unit tests are preferred. Only use integration tests when the logic cannot
+  be meaningfully tested without a real database.
+- Never use `describe.skip`, `it.skip`, or `test.skip` to suppress failures.
+  Fix the test or the code.
+- Never write tests that always pass trivially.
+- If a test was broken by a code change, fix the test or the code - never
+  delete a test to make the suite pass.
+
+---
+
+## Mandatory workflow - do not skip any step
+
+1. Identify which test files are affected by the change.
+2. Run the targeted tests immediately after writing the fix:
+   ```powershell
+   npx vitest run src/path/to/affected.test.ts
+   ```
+3. Confirm each targeted test passes by reading the output.
+4. Fix any remaining failures before proceeding.
+5. Run the full suite last:
+   ```powershell
+   ./make.ps1 test
+   ```
+
+## See also
+
+Tests are also run as part of the full linter suite. See `linter-must-pass.mdc`.

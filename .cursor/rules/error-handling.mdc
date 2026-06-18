@@ -1,0 +1,106 @@
+# Error Handling
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "simple"
+case, not confidence the error won't occur, not wanting to keep code
+short - that permits silently swallowing exceptions or leaking
+infrastructure errors into upper layers.
+
+Prohibited judgement calls:
+- "I'll use `catch (e) {}` to keep it clean." - No. Log and re-throw or convert.
+- "I'll let the Drizzle error propagate to the IPC handler uncaught." - No. Convert it at the infrastructure boundary.
+- "I'll return an empty array on error instead of throwing." - No. Only return empty/null when 'not found' is a genuinely expected outcome.
+- "I'll catch broadly with `catch (e: unknown)` in the use case." - No. Catch specific error types or re-throw.
+- "I'll type the caught error as `any`." - No. Use `unknown` and narrow with `instanceof` or a type guard.
+
+---
+
+## Layer responsibilities
+
+- `infrastructure/` - Catch Drizzle/SQLite errors. Convert to
+  `RepositoryError` (defined in `src/main/application/exceptions/`).
+  Log before converting.
+- `application/` - Catch domain exceptions. Convert to typed result
+  objects or re-throw as application-level errors.
+- `ipc/` - Catch all errors from use cases. Log. Return a typed error
+  response to the renderer. Never let an unhandled exception crash the
+  main process.
+- `renderer/` - Check `result.ok` on every IPC response. Display a clean
+  message to the user on failure. Never show raw error strings.
+
+## Standard IPC response shape
+
+All IPC handlers return a discriminated union:
+
+```typescript
+// In src/shared/ipc-types.ts
+type IpcResponse<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: string };
+```
+
+The renderer always checks `ok` before accessing `data`:
+
+```typescript
+const result = await window.api.subjects.create(input);
+if (!result.ok) {
+  setError(result.error);
+  return;
+}
+setSubject(result.data);
+```
+
+## Infrastructure boundary
+
+```typescript
+// Correct - catch Drizzle error, convert and log at infrastructure boundary
+async create(input: CreateSubjectInput): Promise<SubjectDTO> {
+  try {
+    const [row] = await db.insert(subjects).values(input).returning();
+    return toSubjectDTO(row);
+  } catch (error) {
+    log.error('SubjectRepository.create failed', { error, input });
+    throw new RepositoryError('Failed to create subject', { cause: error });
+  }
+}
+
+// Wrong - Drizzle error leaks to use case
+async create(input: CreateSubjectInput): Promise<SubjectDTO> {
+  const [row] = await db.insert(subjects).values(input).returning();
+  return toSubjectDTO(row);
+}
+```
+
+## Typing caught errors
+
+TypeScript `catch` clauses receive `unknown`. Always narrow before use:
+
+```typescript
+catch (error: unknown) {
+  if (error instanceof RepositoryError) {
+    // handle known error
+  } else {
+    log.error('Unexpected error', { error });
+    throw error; // re-throw unknown errors
+  }
+}
+```
+
+Never cast to `any` to access `.message`. Use a type guard:
+
+```typescript
+function isErrorWithMessage(e: unknown): e is { message: string } {
+  return typeof e === 'object' && e !== null && 'message' in e;
+}
+```
+
+## Domain errors
+
+Domain validation errors throw `DomainError` (defined in
+`src/main/domain/errors.ts`). These propagate up to the IPC handler
+which converts them to `{ ok: false, error: e.message }`.
+
+## See also
+
+Logging conventions: `logging.mdc`.

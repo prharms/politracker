@@ -1,0 +1,143 @@
+---
+description: Rules for React components and IPC handlers - covering process boundary compliance, IPC client usage, loading states, error boundaries, and controlled form patterns.
+globs: src/renderer/**/*.tsx,src/renderer/**/*.ts,src/main/ipc/**/*.ts
+alwaysApply: false
+---
+
+# React and IPC Rules
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not urgency, not
+a "simple" handler, not a missing window.api method - that permits
+deviation. If a rule feels impractical, stop and ask.
+
+Prohibited judgement calls:
+- "I'll use `ipcRenderer.invoke` directly in the component - it's faster." - No. Use `window.api.*` always.
+- "I'll import something from `src/main/` in the renderer - it's just a type." - No. Shared types live in `src/shared/`.
+- "The IPC call is fast enough, no loading state needed." - No. Every async IPC call that affects UI gets a loading state.
+- "I'll use `dangerouslySetInnerHTML` here - the data is internal." - No. Never use it without explicit sanitization.
+- "I'll add a `console.log` for debugging." - No. Use the logger (see `logging.mdc`). Never leave `console.log` in committed code.
+
+---
+
+## IPC access from the renderer
+
+The renderer never calls `ipcRenderer` directly. All IPC communication
+goes through the typed `window.api.*` interface exposed by the preload
+context bridge.
+
+```typescript
+// NEVER - direct ipcRenderer in renderer component
+import { ipcRenderer } from 'electron';
+const subjects = await ipcRenderer.invoke('subjects:list');
+
+// ALWAYS - use the window.api wrapper
+const subjects = await window.api.subjects.list();
+```
+
+The `window.api` interface is typed via declaration in
+`src/shared/ipc-types.ts`. Every channel must be declared there before
+it can be used.
+
+## No main-process imports in the renderer
+
+```typescript
+// NEVER - imports a main-process module into renderer
+import { SubjectRepository } from '@main/infrastructure/repositories/subject-repository';
+
+// CORRECT - use shared types only
+import type { SubjectDTO } from '@shared/dtos/subject-dto';
+```
+
+If a type needed in the renderer lives in `src/main/`, move it to
+`src/shared/dtos/` or `src/shared/ipc-types.ts`.
+
+## Loading states for all async IPC calls
+
+Every IPC call that could take more than an instant must have a loading
+state reflected in the UI.
+
+```typescript
+// Correct pattern
+const [subjects, setSubjects] = useState<SubjectDTO[]>([]);
+const [loading, setLoading] = useState(false);
+
+const loadSubjects = async () => {
+  setLoading(true);
+  try {
+    const result = await window.api.subjects.list();
+    setSubjects(result);
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+The UI must render a visible loading indicator (spinner, skeleton, or
+"Loading..." text) while `loading` is true.
+
+## Error boundaries at page level
+
+Every page-level component must be wrapped in a React error boundary.
+This prevents one page's error from crashing the entire application.
+
+```typescript
+// Every page component wrapped at the router/navigation level
+<ErrorBoundary fallback={<ErrorPage />}>
+  <SubjectDetailPage />
+</ErrorBoundary>
+```
+
+Define a shared `ErrorBoundary` component in
+`src/renderer/components/ErrorBoundary.tsx`.
+
+## Controlled forms
+
+All forms use React controlled components (value + onChange) or
+React Hook Form. No uncontrolled inputs (`ref` + `defaultValue`) for
+data entry forms.
+
+```typescript
+// Correct
+const [name, setName] = useState('');
+<input value={name} onChange={e => setName(e.target.value)} />
+```
+
+## IPC handlers in main process
+
+IPC handlers in `src/main/ipc/` must:
+
+1. Validate input before calling use cases.
+2. Catch all errors and return a typed error response - never throw
+   from an IPC handler.
+3. Never return class instances or domain entities - return plain
+   DTO objects only.
+4. Log errors before returning the error response.
+
+```typescript
+// Correct IPC handler pattern
+ipcMain.handle('subjects:create', async (_event, input: CreateSubjectInput) => {
+  try {
+    const dto = await container.getCreateSubjectUseCase().execute(input);
+    return { ok: true, data: dto };
+  } catch (error) {
+    logger.error('subjects:create failed', { error });
+    return { ok: false, error: 'Failed to create subject' };
+  }
+});
+```
+
+The renderer checks `result.ok` before reading `result.data`.
+
+## No console.log
+
+No `console.log`, `console.warn`, or `console.error` in committed code.
+Use the application logger (see `logging.mdc`).
+In tests, `console.log` is acceptable for debugging but must not be committed.
+
+## See also
+
+- Import layer rules: `clean-architecture-imports.mdc`
+- DTO boundary: `dto-boundary.mdc`
+- Error handling: `error-handling.mdc`

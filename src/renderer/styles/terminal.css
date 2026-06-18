@@ -1,0 +1,343 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0f0a;
+  --green: #33ff33;
+  --green-dim: #1a7a1a;
+  --green-border: #1a4a1a;
+  --orange: #ff6600;
+  --purple: #cc44ff;
+  --glow-green: 0 0 8px #33ff33, 0 0 2px #33ff33;
+  --glow-orange: 0 0 8px #ff6600, 0 0 2px #ff6600;
+  --glow-purple: 0 0 8px #cc44ff, 0 0 2px #cc44ff;
+  --font: 'VT323', 'Courier New', monospace;
+  --font-size: 18px;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  color: var(--green);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  text-shadow: var(--glow-green);
+  -webkit-font-smoothing: none;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Typography                                                           */
+/* ------------------------------------------------------------------ */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font);
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+a {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--green);
+  text-shadow: var(--glow-green);
+}
+
+/* ------------------------------------------------------------------ */
+/* Tables                                                              */
+/* ------------------------------------------------------------------ */
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size);
+}
+
+thead th {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+  border-bottom: 1px solid var(--green-border);
+  padding: 4px 8px;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: normal;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--green-border);
+  cursor: pointer;
+}
+
+tbody tr:hover td {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+}
+
+tbody tr.selected td {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+}
+
+td {
+  padding: 3px 8px;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Status and priority badges                                          */
+/* ------------------------------------------------------------------ */
+
+.badge {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid currentColor;
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.badge-active,
+.badge-in-progress {
+  color: var(--green);
+  text-shadow: var(--glow-green);
+  border-color: var(--green);
+}
+
+.badge-review,
+.badge-urgent {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+  border-color: var(--orange);
+}
+
+.badge-closed,
+.badge-archived,
+.badge-inactive {
+  color: var(--purple);
+  text-shadow: var(--glow-purple);
+  border-color: var(--purple);
+}
+
+.badge-backlog,
+.badge-draft,
+.badge-low {
+  color: var(--green-dim);
+  text-shadow: none;
+  border-color: var(--green-border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Category tags                                                       */
+/* ------------------------------------------------------------------ */
+
+.tag {
+  display: inline-block;
+  color: var(--purple);
+  text-shadow: var(--glow-purple);
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Square radio buttons for status selection                           */
+/* ------------------------------------------------------------------ */
+
+.radio-group {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-size: var(--font-size);
+  color: var(--green-dim);
+  text-shadow: none;
+}
+
+.radio-option input[type='radio'] {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--green-dim);
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.radio-option input[type='radio']:checked {
+  background: var(--orange);
+  border-color: var(--orange);
+  box-shadow: var(--glow-orange);
+}
+
+.radio-option:has(input:checked) {
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+}
+
+/* ------------------------------------------------------------------ */
+/* Forms and inputs                                                    */
+/* ------------------------------------------------------------------ */
+
+input[type='text'],
+input[type='date'],
+textarea,
+select {
+  background: var(--bg);
+  border: 1px solid var(--green-border);
+  color: var(--green);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  text-shadow: var(--glow-green);
+  padding: 4px 8px;
+  outline: none;
+  width: 100%;
+}
+
+input[type='text']:focus,
+input[type='date']:focus,
+textarea:focus,
+select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 4px var(--orange);
+}
+
+/* ------------------------------------------------------------------ */
+/* Buttons                                                             */
+/* ------------------------------------------------------------------ */
+
+button {
+  background: transparent;
+  border: 1px solid var(--green);
+  color: var(--green);
+  font-family: var(--font);
+  font-size: var(--font-size);
+  text-shadow: var(--glow-green);
+  padding: 4px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+button:hover {
+  background: var(--green);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+button.btn-primary {
+  border-color: var(--orange);
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+}
+
+button.btn-primary:hover {
+  background: var(--orange);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Empty states                                                        */
+/* ------------------------------------------------------------------ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  gap: 8px;
+  color: var(--green-dim);
+  text-shadow: none;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.empty-state-hint {
+  font-size: 14px;
+  color: var(--green-border);
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading                                                             */
+/* ------------------------------------------------------------------ */
+
+.loading {
+  color: var(--green-dim);
+  text-shadow: none;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Dividers                                                            */
+/* ------------------------------------------------------------------ */
+
+hr {
+  border: none;
+  border-top: 1px solid var(--green-border);
+  margin: 8px 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Scrollbars                                                          */
+/* ------------------------------------------------------------------ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--green-border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green-dim);
+}

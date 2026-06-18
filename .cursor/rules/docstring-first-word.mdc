@@ -1,0 +1,75 @@
+# JSDoc Conventions
+
+Every exported function, class, and interface must have a JSDoc comment.
+ESLint enforces this via `eslint-plugin-jsdoc`.
+
+## First word rule
+
+The first word of a JSDoc comment must be a verb in imperative mood.
+Do not use a CamelCase identifier, a noun phrase, or a gerund as the
+first word.
+
+## Prohibited - common violations
+
+```typescript
+// WRONG - CamelCase identifier as first word
+/** SubjectRepository handles database access for subjects. */
+
+// WRONG - gerund (verb ending in -ing)
+/** Getting all active subjects from the database. */
+
+// WRONG - noun phrase
+/** The result of querying subjects. */
+
+// WRONG - past tense
+/** Retrieved subjects filtered by status. */
+```
+
+## Required - imperative mood, plain English first word
+
+```typescript
+// CORRECT
+/** Retrieve all active subjects ordered by name. */
+
+/** Create a new subject and return the persisted DTO. */
+
+/** Validate that the task title is non-empty and under 200 characters. */
+
+/** Convert a database row to a SubjectDTO. */
+```
+
+## What gets a JSDoc comment
+
+- All `export`ed functions
+- All `export`ed classes and their public methods
+- All `export`ed interfaces and their properties (if non-obvious)
+- All IPC channel handlers
+
+## What does not need a JSDoc comment
+
+- Private class methods where the intent is clear from the name
+- Test helper functions internal to a test file
+- React component props interfaces with self-explanatory fields
+
+## Parameters and return types
+
+TypeScript type annotations are the source of truth for parameter types
+and return types. Do not duplicate them in `@param` and `@returns` tags
+unless the type alone does not convey the intent.
+
+```typescript
+// No @param/@returns needed - types are self-documenting
+/** Create a new subject and return the persisted DTO. */
+async function createSubject(input: CreateSubjectInput): Promise<SubjectDTO> { ... }
+
+// @param needed - the intent of the parameter is not obvious from the type
+/**
+ * Execute the use case.
+ * @param forceRefresh - when true, bypasses the in-memory cache
+ */
+async function execute(id: string, forceRefresh = false): Promise<SubjectDTO> { ... }
+```
+
+## See also
+
+- Linter enforcement: `linter-must-pass.mdc` (eslint-plugin-jsdoc)

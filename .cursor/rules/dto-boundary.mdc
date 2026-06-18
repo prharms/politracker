@@ -1,0 +1,108 @@
+# DTO Boundary
+
+## ZERO DISCRETION POLICY
+
+This rule has no exceptions. There is no scenario - not a "simple"
+entity, not a one-off display, not urgency - that permits passing a
+domain entity across the IPC boundary to the renderer.
+
+Prohibited judgement calls:
+- "This entity only has two fields, a DTO is overkill." - No. Create the DTO.
+- "I'll pass the entity directly for now and add the DTO later." - No. The DTO is required before the task is done.
+- "The renderer only reads one field, it doesn't need the full DTO." - No. All data crossing the IPC boundary goes through a DTO.
+- "I'll add the new field to the entity and read it in the renderer directly." - No. Add it to the DTO.
+
+---
+
+Domain entities must never cross the IPC boundary from the main process
+to the renderer. Always convert to a Data Transfer Object (DTO) first.
+
+## Why this matters for Electron specifically
+
+Domain entities may be class instances with methods, private fields, and
+circular references. Electron's IPC serializes data using the structured
+clone algorithm, which cannot serialize class instances, functions, or
+circular references. Sending a domain entity across IPC will either throw
+a runtime error or silently strip methods and private state.
+
+DTOs are plain TypeScript interfaces with only serializable data. They
+always survive IPC serialization safely.
+
+## Pattern
+
+DTOs live in `src/shared/dtos/`. They are plain TypeScript interfaces
+(not classes) so they are importable from both the main and renderer process.
+
+```typescript
+// src/shared/dtos/subject-dto.ts
+export interface SubjectDTO {
+  id: string;
+  name: string;
+  type: 'Individual' | 'Organization';
+  raceContext: string | null;
+  status: 'Active' | 'Inactive' | 'Archived';
+  notes: string | null;
+  createdAt: string; // ISO 8601 string, not Date object
+}
+```
+
+Conversion from domain entity to DTO happens in the infrastructure layer
+or use case:
+
+```typescript
+// src/main/infrastructure/repositories/subject-repository.ts
+function toSubjectDTO(row: SubjectRow): SubjectDTO {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    raceContext: row.race_context,
+    status: row.status,
+    notes: row.notes,
+    createdAt: row.created_at,
+  };
+}
+```
+
+The IPC handler returns the DTO:
+
+```typescript
+ipcMain.handle('subjects:get', async (_event, id: string) => {
+  try {
+    const dto = await container.getSubjectUseCase().execute(id);
+    return { ok: true, data: dto };
+  } catch (error) {
+    return { ok: false, error: 'Subject not found' };
+  }
+});
+```
+
+The renderer works with the plain DTO interface only:
+
+```typescript
+// src/renderer/components/SubjectCard.tsx
+interface Props {
+  subject: SubjectDTO; // imported from src/shared/dtos/subject-dto
+}
+```
+
+## Date serialization
+
+`Date` objects are not safely cloneable across IPC in all Electron
+versions. Always serialize dates as ISO 8601 strings in DTOs
+(`string` type, not `Date`). The renderer converts to a `Date` object
+locally if needed for display formatting.
+
+## Rules
+
+- DTOs are plain interfaces, not classes. No methods, no inheritance.
+- All dates in DTOs are ISO 8601 strings.
+- DTOs live in `src/shared/dtos/`. They may be imported from any layer.
+- Use cases return DTOs. IPC handlers pass them to the renderer as-is.
+- If the renderer needs a new field, add it to the DTO in `src/shared/dtos/`.
+  Do not reach into the domain entity from the renderer.
+
+## See also
+
+- Import layer rules: `clean-architecture-imports.mdc`
+- IPC response shape: `error-handling.mdc`

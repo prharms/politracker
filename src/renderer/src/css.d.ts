@@ -1,0 +1,10 @@
+/** Type declarations for CSS module imports in the renderer. */
+declare module '*.module.css' {
+  const classes: Record<string, string>
+  export default classes
+}
+
+declare module '*.css' {
+  const styles: Record<string, string>
+  export default styles
+}

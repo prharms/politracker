@@ -1,0 +1,53 @@
+---
+description: Prohibits pipe tables in any document intended to be read by a human. Applies to ADRs, READMEs, CLAUDE.md, and all other markdown documentation files.
+alwaysApply: true
+---
+
+# No Pipe Tables in Human-Readable Documents
+
+Do not use markdown pipe tables (`| col | col |`) in any document that a
+human will read. This includes:
+
+- `README.md`
+- `CLAUDE.md`
+- `docs/adr/*.md`
+- Any other `.md` documentation file
+
+## Use instead
+
+**For labelled items:** use `**label** — explanation` in a bullet list.
+
+**For comparisons or options:** use a nested bullet list.
+
+```markdown
+- Option A — SQLAlchemy Core
+  - No ORM overhead
+  - Full control over SQL
+- Option B — SQLAlchemy ORM
+  - Higher abstraction
+  - Requires Alembic for migrations
+```
+
+**For sequential or named properties:** use a definition-style subheader or
+bold label per item.
+
+```markdown
+### document_id
+Non-empty string identifier from the source file.
+
+### check_date
+Calendar date. Must not be in the future.
+```
+
+## Why
+
+Pipe tables render well in GitHub and some markdown previewers, but they are
+visually noisy in plain text, break at any non-trivial cell length, and are
+difficult to maintain. Bullet lists and subheaders communicate the same
+structure with less friction for both readers and writers.
+
+## Scope
+
+This rule applies to documentation files only. It does not apply to code
+comments, docstrings, or skill files (which may use tables for structured
+reference content consumed primarily by the agent, not by a human reader).

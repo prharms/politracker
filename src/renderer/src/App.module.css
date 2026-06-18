@@ -1,0 +1,50 @@
+.screen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  padding: 16px;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid var(--green-border);
+  padding-bottom: 12px;
+  -webkit-app-region: drag;
+}
+
+.title {
+  font-size: 32px;
+  color: var(--orange);
+  text-shadow: var(--glow-orange);
+  letter-spacing: 4px;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--green-dim);
+  text-shadow: none;
+  letter-spacing: 2px;
+}
+
+.main {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.ready {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

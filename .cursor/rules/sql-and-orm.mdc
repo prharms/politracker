@@ -1,0 +1,81 @@
+# Database Access - Drizzle ORM
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "quick"
+query, not convenience, not performance assumptions - that permits
+unsafe query construction or layer violations.
+
+Prohibited judgement calls:
+- "I'll use a template literal in the query, the value is safe." - No. Use Drizzle's parameterized API. Always.
+- "I'll put this query in the use case, just this once." - No. All queries live in `src/main/infrastructure/repositories/`.
+- "I don't need to explain why I skipped the ORM." - No. Every raw SQL block must have a comment explaining why Drizzle was insufficient.
+- "The column name is obvious from context." - No. Read `src/main/infrastructure/db/schema.ts` for every table before writing any column reference. Inference is prohibited.
+- "I've queried this table before so I know its columns." - No. Read the schema. Memory of past sessions is not a cited source.
+
+---
+
+## Prefer Drizzle ORM
+
+Use Drizzle's query builder for all standard filtering, joining, sorting,
+and pagination:
+
+```typescript
+// Preferred
+const results = await db
+  .select()
+  .from(subjects)
+  .where(eq(subjects.status, 'Active'))
+  .orderBy(subjects.name);
+```
+
+## Mandatory column verification before writing any query
+
+Before writing any column reference, verify the column name against the
+schema file that defines the table.
+
+Required steps - no exceptions:
+
+1. Read `src/main/infrastructure/db/schema.ts`.
+2. Find the table definition (`export const subjects = sqliteTable(...)`).
+3. Read the column definitions inside it.
+4. Only then write column references in the query.
+
+This applies even when:
+- You have queried the same table before.
+- The column name "obviously" matches a similar table.
+- You are copying a pattern from a working query.
+
+## Raw SQL - permitted with conditions
+
+When Drizzle's query builder genuinely cannot express the query (complex
+window functions, CTEs, UNION across heterogeneous sources):
+
+- Use Drizzle's `sql` tagged template literal - never a plain string or
+  template literal with user input:
+
+```typescript
+// Correct - Drizzle sql tag parameterizes automatically
+const result = await db.run(sql`
+  SELECT * FROM subjects WHERE id = ${subjectId}
+`);
+
+// NEVER do this - SQL injection risk
+const result = await db.run(`SELECT * FROM subjects WHERE id = ${subjectId}`);
+```
+
+- Add a comment explaining why Drizzle's query builder was insufficient.
+- Raw SQL queries still live in `src/main/infrastructure/repositories/` -
+  never in `application/` or `ipc/`.
+
+## Layer constraint
+
+All database access code lives in `src/main/infrastructure/repositories/`.
+Use cases receive a repository interface (port) and call methods on it.
+Use cases never import from `infrastructure/` directly.
+
+## See also
+
+- Layer rules: `clean-architecture-imports.mdc`
+- Column verification workflow: `verify-sql-columns` skill (verify the
+  concept applies - schema is now in `schema.ts` not `orm_models.py`).

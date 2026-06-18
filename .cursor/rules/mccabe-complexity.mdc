@@ -1,0 +1,101 @@
+# McCabe Complexity Limit
+
+## ZERO DISCRETION POLICY
+
+No function in this codebase may have a McCabe complexity score above 10.
+This is enforced by the ESLint `complexity` rule as part of `./make.ps1 lint`.
+
+There is no scenario - not urgency, not a "small addition", not confidence
+that the function is readable - that permits exceeding complexity 10.
+
+Prohibited judgement calls:
+- "I'm only adding one branch, it probably won't push it over." - No. Count before you commit.
+- "The function was already complex, my addition is minor." - No. You are responsible for the total score after your change.
+- "ReadLints showed no errors, so complexity is fine." - No. ReadLints does not run ESLint complexity. Only `./make.ps1 lint` detects it.
+- "I'll refactor it later." - No. The refactor happens before the change is presented as done.
+
+---
+
+## What McCabe complexity counts
+
+Every branch in a function adds 1 to the score. The base score is 1.
+
+- `if` / `else if` - +1 each
+- `for` / `while` / `do...while` - +1 each
+- `catch` clause - +1
+- `case` in a `switch` - +1 each
+- `&&` or `||` in a condition - +1 each
+- Ternary `? :` - +1
+- Optional chaining `?.` used as a branch - +1
+
+A function with a score of 11+ will fail `./make.ps1 lint` with:
+```
+complexity: Function has a complexity of N. Maximum allowed is 10.
+```
+
+---
+
+## Mandatory pre-change check
+
+Before adding any conditional logic, loop, or exception handler to an
+existing function:
+
+1. Count the current complexity of that function.
+2. Count the branches your addition will contribute.
+3. If current + new > 10, extract helpers before writing the new logic.
+
+Do not add the new logic first and fix the complexity afterwards.
+
+---
+
+## How to fix a complexity violation
+
+Extract branches into named helper functions:
+
+```typescript
+// WRONG - complex function doing too much
+function processTask(task: Task): Result {
+  if (!task.title) {           // +1
+    return { error: '...' };
+  }
+  if (task.status === 'Closed') { // +1
+    return { error: '...' };
+  }
+  for (const tag of task.tags) { // +1
+    if (tag.length > 50) {       // +1
+      // ...
+    }
+  }
+  // ... more branches ...
+}
+
+// CORRECT - extract helpers at module level
+function validateTaskInput(task: Task): string | null {
+  if (!task.title) return 'Title is required';
+  if (task.status === 'Closed') return 'Cannot update closed task';
+  return null;
+}
+
+function processTaskTags(tags: string[]): ProcessedTag[] {
+  // tag processing logic isolated here
+}
+
+function processTask(task: Task): Result {
+  const validationError = validateTaskInput(task);
+  if (validationError) return { error: validationError }; // +1
+  const tags = processTaskTags(task.tags);
+  // ...
+}
+```
+
+Other valid strategies:
+- Replace long `if/else if` chains with a lookup object or `Map`
+- Extract filter predicates into named predicate functions
+- Extract date-range or status logic into dedicated helpers
+
+---
+
+## See also
+
+- Full linter suite: `linter-must-pass.mdc`
+- ESLint complexity rule is configured in `eslint.config.js`

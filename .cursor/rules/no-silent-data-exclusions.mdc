@@ -1,0 +1,67 @@
+# No Silent Data Exclusions
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario — not cleanliness,
+not performance, not "obvious" correctness — that permits filtering,
+excluding, or suppressing data records without explicit user approval.
+
+Prohibited judgement calls:
+- "This row has no filer ID, I'll filter it out so the graph is cleaner." — No. Show the data. Ask first.
+- "I'll exclude these records because they can't be fully traced." — No. Partial data is better than silently missing data.
+- "This filter is a minor implementation detail, I don't need to mention it." — No. Every exclusion must be disclosed.
+- "I'll add a WHERE clause to drop records with unexpected values." — No. Ask the user whether to exclude or retain them.
+- "I'll silently cap this at N rows to avoid performance issues." — No. Disclose the cap and get approval.
+
+If you are about to write a WHERE clause, HAVING clause, or any filter
+condition that causes real-world records to be excluded from a query
+result or visualization, STOP. State what you are about to exclude and
+why, and get explicit user approval before writing the filter.
+
+---
+
+## The Rule
+
+Any SQL filter, Python condition, or display logic that causes records
+to be silently omitted from a result set or visualization requires
+explicit user approval before implementation.
+
+## What Counts as a Silent Exclusion
+
+- A WHERE clause that drops rows based on a data quality condition
+  (e.g. missing ID, unexpected entity type, non-numeric field value).
+- A HAVING clause that removes groups whose aggregate falls below a threshold.
+- A Python filter that drops items from a list before displaying them.
+- A display-layer condition that hides nodes, links, or rows without
+  a visible indicator that data was omitted.
+- Any cap on the number of results returned that is not already documented
+  and approved.
+
+## What Is Not Covered
+
+- Filters that are already explicitly documented in an ADR and approved
+  by the user (e.g. the $50,000 IE materiality floor in ADR-0044).
+- Format validation filters that reject clearly corrupt data (e.g.
+  a date field that contains a string like "N/A" that cannot be parsed).
+  These must still be disclosed, but do not require interactive approval
+  if the corruption is unambiguous.
+
+## Required Disclosure Format
+
+Before adding any new exclusion filter, state:
+
+1. What records will be excluded.
+2. How many records are affected (or an estimate if unknown).
+3. Why the exclusion is being proposed.
+4. What the alternative is (include instead, flag instead, etc.).
+
+Then wait for explicit approval.
+
+## See also
+
+The entity_cd filter incident (session 2026-05-21): a WHERE clause
+`entity_cd NOT IN ('COM', 'RCP') OR cmte_id ~ '^[0-9]+$'` was added
+to two contribution CTEs without disclosure, silently dropping all
+committee contributions where the Cal-Access filer ID was "Pending".
+This was only discovered during a methodology audit. The filter was
+removed. The lesson: no filter is too small to disclose.

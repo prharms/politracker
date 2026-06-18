@@ -1,0 +1,78 @@
+---
+description: Raw Python tracebacks must never be shown to the user in the CLI or web UI. Every unhandled application exception must be caught at the presentation boundary and shown as a clean, human-readable message.
+alwaysApply: true
+---
+
+# No Raw Tracebacks in User-Facing Output
+
+A raw Python traceback is never acceptable as a user-facing error message.
+It is noise to a non-technical user and a potential security leak to anyone.
+
+## The rule
+
+Every exception that can reach the user — CLI stdout/stderr or a Flask
+response — must be caught at the presentation boundary and converted to a
+clean message before it is displayed.
+
+The traceback must still be logged (with `exc_info=True`) so it is available
+for debugging. It just must not be printed to the terminal or rendered in
+the browser.
+
+## CLI — required pattern
+
+Catch the application exception in the Click command and call
+`click.echo(..., err=True)` followed by `raise SystemExit(1)`:
+
+```python
+try:
+    result = use_case.execute(...)
+except SomeApplicationError as exc:
+    click.echo(f"\nError: {exc}", err=True)
+    raise SystemExit(1) from exc
+```
+
+- `err=True` sends the message to stderr, not stdout, so it does not
+  pollute piped output.
+- `raise SystemExit(1)` exits with a non-zero code so scripts can detect
+  failure.
+- Never use `sys.exit()` — `SystemExit` is the Click-idiomatic form.
+- Never suppress the exception without logging it at error level first.
+
+## Flask — required pattern
+
+Register an error handler in `create_app()` for any application exception
+that could leak through a route:
+
+```python
+@app.errorhandler(SomeApplicationError)
+def handle_app_error(exc: SomeApplicationError) -> tuple[str, int]:
+    app.logger.error("Application error: %s", exc, exc_info=True)
+    return render_template("error.html", message=str(exc)), 500
+```
+
+For unexpected exceptions, register a catch-all:
+
+```python
+@app.errorhandler(Exception)
+def handle_unexpected(exc: Exception) -> tuple[str, int]:
+    app.logger.error("Unexpected error", exc_info=True)
+    return render_template("error.html", message="An unexpected error occurred."), 500
+```
+
+Never let Flask's default debugger page (`debug=True` traceback) reach
+production. `debug` must always be `False` in `app.run()`.
+
+## What counts as the presentation boundary
+
+- CLI: the `@click.command()` function body — catch before the command returns.
+- Flask: the route function or an `@app.errorhandler` — catch before the
+  response is returned.
+
+Exceptions must not be caught inside use cases or repositories and silently
+converted to empty results — that hides failures. They must propagate to the
+presentation boundary, where they are caught, logged, and shown cleanly.
+
+## See also
+
+`.cursor/skills/clean-error-messages/SKILL.md` for implementation patterns
+and a checklist for auditing existing commands and routes.

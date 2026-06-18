@@ -1,0 +1,39 @@
+---
+description: Never silently exclude data fields without explicit user approval
+alwaysApply: true
+---
+
+# No Silent Data Exclusions
+
+## ZERO DISCRETION POLICY
+
+Never decide on your own to exclude a field, element, column, schedule section,
+or any other piece of data from a parser, entity, query, or display.
+
+Every exclusion requires explicit user approval before implementation.
+
+## Required behavior
+
+When recon reveals data that could be captured, present the full inventory to
+the user and ask which items to include or exclude. Do not pre-filter it.
+
+Before writing any code that omits a field that exists in the source data:
+
+1. List the field and explain what it contains.
+2. Ask the user whether to include or exclude it.
+3. Wait for an explicit answer.
+
+## Prohibited judgement calls
+
+- "This field is a compliance flag — not analytically useful." — No. Ask.
+- "This is a rolling average — complex to model." — No. Ask.
+- "This only applies to a small subset of orgs." — No. Ask.
+- "The total already covers this detail." — No. Ask.
+- "I'll skip the multi-year averages for now." — No. Ask.
+- Presenting a design summary that omits fields without disclosing the omission. — No.
+  Always disclose what you are proposing to exclude before the user approves the design.
+
+## Scope
+
+Applies to all data ingestion work: XML parsers, scrapers, database queries,
+API clients, CSV importers, and any other source-to-domain mapping.

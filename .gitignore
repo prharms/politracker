@@ -1,0 +1,13 @@
+node_modules/
+out/
+dist/
+dist-electron/
+.env
+*.db
+*.db-shm
+*.db-wal
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db

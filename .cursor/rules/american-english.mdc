@@ -1,0 +1,73 @@
+---
+description: All user-facing text, comments, docstrings, and variable names must use American English spelling. No British variants.
+alwaysApply: true
+---
+
+# American English Spelling
+
+## ZERO DISCRETION POLICY
+
+All text in this codebase — user-facing copy, code comments, docstrings, variable
+names, string literals, template content, and commit messages — must use American
+English spelling. No exceptions.
+
+Prohibited judgement calls:
+- "Colour is the correct international spelling." — No. Use `color`.
+- "Behaviour is standard in many style guides." — No. Use `behavior`.
+- "This is a direct quote from a government form." — No. Normalize to American English in our code and copy.
+
+---
+
+## Common substitutions
+
+| British | American |
+|---|---|
+| colour | color |
+| behaviour / behavioural | behavior / behavioral |
+| centre / centred | center / centered |
+| honour / honoured | honor / honored |
+| organisation / organised | organization / organized |
+| recognise / recognised | recognize / recognized |
+| analyse / analysed | analyze / analyzed |
+| licence (noun) | license |
+| defence | defense |
+| programme | program |
+| travelling | traveling |
+| cancelled | canceled |
+| labelling | labeling |
+| fulfil / fulfilment | fulfill / fulfillment |
+| grey | gray |
+| cheque | check |
+| prioritise | prioritize |
+| initialise | initialize |
+| serialise | serialize |
+| normalise | normalize |
+
+---
+
+## Scope
+
+This rule applies to:
+- Jinja2 template text and comments
+- Python docstrings and inline comments
+- Python string literals (error messages, log messages, UI copy)
+- Variable and function names (e.g. `normalize_` not `normalise_`)
+- Commit messages
+- ADR documents and any `.md` files in this repo
+
+## Typography
+
+Em-dashes (`—`, U+2014) and en-dashes (`–`, U+2013) are prohibited everywhere
+in this codebase — in the same way emoji are prohibited. Use a plain hyphen-minus
+(`-`) in CLI output, code comments, and string literals. Use a spaced hyphen
+(` - `) where a dash is needed for readability.
+
+This applies to:
+- CLI output strings (`click.echo`, `print`)
+- Python docstrings, comments, log messages, error messages
+- Template text and any user-facing copy
+- Commit messages and documentation files
+
+## See also
+
+- `no-pipe-tables.mdc` - other prose formatting rules

@@ -1,0 +1,179 @@
+---
+description: Git branching thresholds, when to push to main vs a branch, and the requirement that lint must pass before any push.
+alwaysApply: true
+---
+
+# Git Branching and Push Rules
+
+## ZERO DISCRETION POLICY
+
+These rules are not guidelines. They are not suggestions that can be
+weighed against other factors. There is no scenario — not urgency, not
+message length, not tool limitations, not a verbal confirmation from the
+user — that permits deviation.
+
+If following a rule feels inconvenient or impossible with the current
+approach, STOP. Do not work around it. Ask the user how to proceed.
+
+Claiming "I prioritised X over the rule" is a protocol violation in
+itself. The rules take priority over every other consideration.
+
+---
+
+## MANDATORY PRE-COMMIT CHECKLIST
+
+Before writing any `git commit` command, complete every item below IN
+ORDER. Do not skip any item. Do not rely on a previous run or a verbal
+confirmation from the user.
+
+```
+[ ] 1. Run ./make.ps1 lint in the terminal and wait for output.
+       The output must contain [SUCCESS] for ALL checks.
+       If it does not, fix the failures before proceeding.
+       A verbal "it passed" from the user does NOT satisfy this item.
+
+[ ] 2. Count the subject line characters.
+       Write the subject line text in your response FIRST.
+       Count every character including spaces. The count must be <= 72.
+       If the count exceeds 72, shorten the subject line before proceeding.
+       There is no exception for "informative" subject lines.
+
+[ ] 3. Confirm the commit command uses exactly two -m flags.
+       Syntax: git commit -m "subject" -m "body"
+       NEVER use heredoc (cat <<'EOF'), multiline strings, or any other
+       construct. Two -m flags only. No exceptions.
+
+[ ] 4. Confirm the subject line uses imperative mood with no trailing period.
+
+[ ] 5. Confirm the body explains *why* and *how*, covers all meaningful
+       sub-changes, and does not repeat the subject verbatim.
+```
+
+If any item cannot be checked off, do not issue the commit command.
+Ask the user instead.
+
+---
+
+## Non-negotiable: lint must pass before any push
+
+Never push to any branch — including main — unless `./make.ps1 lint`
+passes completely in the current terminal session.
+
+```powershell
+./make.ps1 lint
+# Must show [SUCCESS] for ALL checks before git push
+```
+
+---
+
+## When to create a feature branch
+
+Create a feature branch when **any** of the following is true:
+
+| Condition | Example |
+|---|---|
+| Change touches 3 or more files | New route + use case + repository |
+| Any new feature is being added | New web route, new CLI command, new data source |
+| Any change to a database schema | ORM model change + Alembic migration |
+| Any refactor that moves or renames existing code | Renaming a port, splitting a repository |
+| Any change that requires new or updated tests | All substantive code changes |
+| The work will take more than one session to complete | Multi-step features |
+| The change could break existing functionality | Route changes, use case signature changes |
+
+### Branch naming convention
+
+```
+feature/short-description        # new functionality
+fix/short-description            # bug fix
+refactor/short-description       # internal restructuring
+chore/short-description          # dependency updates, config, tooling
+```
+
+---
+
+## When it is acceptable to push directly to main
+
+Direct pushes to main are only appropriate when **all five** of the
+following conditions are met simultaneously:
+
+1. The change is limited to **1-2 files maximum**
+2. The change is **non-functional** — documentation, comments, config values, rule files, README updates
+3. The lint suite **already passes** and the change cannot plausibly break it
+4. No new tests are required
+5. The change has been reviewed and is not time-sensitive
+
+Not acceptable for direct main push (no exceptions):
+- Any Python logic change, however small
+- Any template or route change
+- Any migration or schema change
+- Any change that touches more than 2 files
+
+---
+
+## Commit message format
+
+Every commit must use exactly two `-m` flags.
+
+**Subject line** (first `-m`):
+- 72 characters or fewer — count explicitly before writing the command
+- Imperative mood ("Add", "Fix", "Refactor") — not past tense, not noun phrase
+- No trailing period
+- Summarises what changed at the feature level
+
+**Body** (second `-m`):
+- One or more sentences explaining why and how
+- Covers all meaningful sub-changes in the commit
+- Does not repeat the subject verbatim
+
+**Correct syntax — this exact form, nothing else:**
+```powershell
+git commit -m "Subject line under 72 chars" -m "Body explaining why and how."
+```
+
+**Prohibited syntax — never use these:**
+```powershell
+# PROHIBITED: heredoc
+git commit -m "$(cat <<'EOF'
+subject
+EOF
+)"
+
+# PROHIBITED: multiline string
+git commit -m "subject
+body"
+
+# PROHIBITED: single -m for substantive changes
+git commit -m "subject"
+```
+
+Single-line commit messages are only acceptable for trivial chore/doc
+changes: rule files, typo fixes, README updates.
+
+---
+
+## Complete workflow
+
+```powershell
+# 1. Create branch
+git checkout -b feature/my-feature
+
+# 2. Make changes, run targeted tests
+.venv\Scripts\pytest.exe tests/affected/test_file.py -v
+
+# 3. Run full lint — required, not optional, run it now in this session
+./make.ps1 lint
+
+# 4. Commit — subject line counted to <= 72 chars, two -m flags
+git commit -m "Short subject line under 72 chars" -m "Body explaining why and how, covering all meaningful sub-changes."
+
+# 5. Push
+git push origin feature/my-feature
+```
+
+---
+
+## See also
+
+- Lint requirements: `linter-must-pass.mdc`
+- Test requirements: `test-suite.mdc`
+- PowerShell syntax: `powershell-only.mdc`

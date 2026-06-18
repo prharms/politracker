@@ -1,0 +1,199 @@
+---
+description: Bloomberg terminal visual design rules, CSS architecture, and React component patterns for Politicket templates.
+globs: src/renderer/**/*.tsx,src/renderer/**/*.ts,src/renderer/**/*.css
+alwaysApply: false
+---
+
+# Web Design Rules
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not a "one-off"
+component, not speed, not the style being "nearly the same" - that
+permits duplicating CSS across components or inventing off-palette colors.
+
+Prohibited judgement calls:
+- "I'll define the style inline for now and move it later." - No. Shared styles go in `terminal.css` or a CSS module before the task is done.
+- "I'll use a slightly different shade of amber here." - No. Use the exact palette value.
+- "This element doesn't need a loading state." - No. Every async operation gets a loading indicator.
+- "I'll use a UI component library for this one widget." - No. No Bootstrap, no Tailwind, no MUI. Custom CSS only to maintain the terminal aesthetic.
+- "I'll add `color: red` inline on this element." - No. Use a CSS module class or a global terminal.css class.
+
+---
+
+## 1988 green phosphor terminal aesthetic
+
+The visual language is a 1988 CRT terminal - not a dark mode web app, not
+Bloomberg, not a modern "hacker" theme. Every design decision reinforces
+the physical reality of a phosphor screen: green light, no decoration,
+pure information density.
+
+Colors - do not deviate from these values:
+- Background: `#0a0f0a` (near-black with green tint)
+- Primary text: `#33ff33` (bright phosphor green)
+- Dim text: `#1a7a1a` (lower-brightness green for secondary info, labels)
+- Orange accent: `#ff6600` (active states, selected rows, urgent priority, focused elements)
+- Purple accent: `#cc44ff` (categories, tags, metadata)
+- Border/divider: `#1a4a1a` (dark green lines)
+
+CRT phosphor glow - applied to all visible text:
+```css
+text-shadow: 0 0 8px #33ff33, 0 0 2px #33ff33;
+```
+Orange and purple elements get their own matching glow:
+```css
+/* orange glow */
+text-shadow: 0 0 8px #ff6600, 0 0 2px #ff6600;
+/* purple glow */
+text-shadow: 0 0 8px #cc44ff, 0 0 2px #cc44ff;
+```
+
+Font: `'VT323', 'Courier New', monospace` - everywhere, no exceptions.
+Load VT323 from Google Fonts. It replicates the VT100 terminal character
+appearance exactly.
+
+Font size: 16px base (VT323 renders smaller than typical fonts at the same
+size - 16px reads like 13px on a standard font).
+
+No border-radius anywhere. Terminals are square.
+No drop shadows beyond the phosphor text glow.
+No gradients. No blur effects. No decorative icons or imagery.
+No scanlines. No screen curvature.
+
+Borders and dividers use plain CSS border with color `#1a4a1a`, or ASCII
+box-drawing characters (`+`, `-`, `|`) in text where appropriate.
+
+## CSS architecture
+
+```
+src/renderer/styles/
+  terminal.css       <- Global variables, reset, base typography, shared utility classes
+  components/        <- Per-component CSS modules (*.module.css)
+```
+
+**Global styles in `terminal.css`:**
+CSS custom properties (variables) for the entire palette. Base reset.
+Typography defaults. Shared utility classes used across 2+ components.
+
+**Component styles in CSS modules (`*.module.css`):**
+Styles that belong to exactly one component live in a `.module.css` file
+next to the component file. Import via:
+```typescript
+import styles from './SubjectCard.module.css';
+<div className={styles.card}>
+```
+
+Never duplicate a class between two `.module.css` files. If the same
+visual pattern appears in two components, extract it to `terminal.css`.
+
+Never use inline `style={{}}` props except for dynamically computed
+values (e.g. a width percentage from a prop). Static styles always go
+in CSS.
+
+## Color usage
+
+- Green (`#33ff33`): default text, normal status, active data, In Progress.
+- Dim green (`#1a7a1a`): secondary labels, placeholder text, inactive rows.
+- Orange (`#ff6600`): selected/focused elements, Urgent priority, Review
+  status, warnings, the current page indicator in navigation.
+- Purple (`#cc44ff`): category tags, metadata fields, Closed/Final status,
+  archived items.
+- Do not introduce a new color for any purpose. Map every new state to
+  the closest existing palette entry: green for active/normal, orange for
+  elevated/warning, purple for completed/categorized.
+
+## Data tables
+
+Every data table follows this structure:
+
+```tsx
+<div className={styles.tableContainer}>
+  <table className={styles.table}>
+    <thead>
+      <tr>
+        <th className={styles.sortableHeader} data-column="name">
+          Name
+        </th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map(row => (
+        <tr
+          key={row.id}
+          className={styles.clickableRow}
+          onClick={() => onRowClick(row.id)}
+        >
+          <td>{row.name}</td>
+          <td><StatusBadge status={row.status} /></td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
+```
+
+- `tableContainer`: `overflow-x: auto` so the table scrolls without
+  breaking the page layout. Never apply `overflow-x` inline.
+- `sortableHeader`: cursor pointer, sort indicator (small arrow glyph).
+- `clickableRow`: cursor pointer, hover background change.
+- Sticky header row: `position: sticky; top: 0; background: #141414; z-index: 10`.
+
+## Status badges
+
+Status and priority values are always rendered as a `<StatusBadge>`
+component, never as raw text:
+
+```tsx
+<StatusBadge status="In Progress" />
+<PriorityBadge priority="Urgent" />
+```
+
+Define these components in `src/renderer/components/StatusBadge.tsx` and
+`src/renderer/components/PriorityBadge.tsx`. The color mapping lives in
+the component, not scattered across templates.
+
+## Empty states
+
+When a list has no results, always render a structured empty state - never
+just nothing or a hidden element:
+
+```tsx
+<div className={styles.emptyState}>
+  <div className={styles.emptyStateLabel}>NO SUBJECTS FOUND</div>
+  <div className={styles.emptyStateHint}>
+    Create a subject to begin tracking research.
+  </div>
+</div>
+```
+
+## Loading states
+
+While an async IPC call is in flight, show a loading indicator:
+
+```tsx
+{loading ? (
+  <div className={styles.loadingState}>LOADING...</div>
+) : (
+  <SubjectTable subjects={subjects} />
+)}
+```
+
+No spinners with gradients or animations beyond a simple blink/pulse.
+Terminal aesthetic: text like `LOADING...` or a blinking cursor is preferred.
+
+## UX principles applied
+
+- **Density first**: default view shows as much data as possible without
+  scrolling. No unnecessary whitespace.
+- **Keyboard navigability**: all primary actions are reachable via keyboard.
+  Tab order is logical.
+- **No modal dialogs for destructive actions**: use an inline confirmation
+  ("Press again to confirm") rather than a modal overlay.
+- **No animations**: no transitions, no slide-ins, no fades. State changes
+  are instant.
+
+## See also
+
+- IPC and React patterns: `html-routes.mdc`
+- DTO boundary: `dto-boundary.mdc`

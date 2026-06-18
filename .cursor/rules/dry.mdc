@@ -1,0 +1,111 @@
+---
+description: Don't Repeat Yourself — reuse existing logic rather than duplicating it. Use composition over copy-paste for use cases, helpers, and shared utilities.
+alwaysApply: true
+---
+
+# DRY — Don't Repeat Yourself
+
+## ZERO DISCRETION POLICY
+
+This rule has no exceptions. There is no scenario — not urgency, not a
+"slightly different" requirement, not a one-off case — that permits
+duplicating logic that already exists and can be composed or extracted.
+
+Prohibited judgement calls:
+- "This new use case is similar but not identical — I'll just copy it." — No. Identify the shared core, extract it, and compose.
+- "The existing function almost does what I need; I'll duplicate it and modify it." — No. Extend or parameterise the existing function.
+- "The logic is in another layer so I can't call it — I'll rewrite it here." — No. If the boundary prevents reuse, extract the shared logic into `shared/` or a module-level helper both callers can reach.
+- "It's only 10 lines, duplication is fine." — No. The size of the duplication is irrelevant. The maintenance risk is the same.
+- "I'll refactor later." — No. If duplication is introduced now, it becomes a maintenance liability the moment the shared logic changes.
+
+---
+
+## When you are about to write code that already exists
+
+Before writing any new function, class, or block of logic, answer:
+
+1. Does an equivalent already exist in this codebase?
+2. Can the existing logic be called directly, composed, or parameterised to cover this case?
+3. If not, can the shared part be extracted into a helper that both the existing and new code call?
+
+If the answer to (1) is yes and (2) is no and (3) is no, stop and ask
+before proceeding. Do not duplicate.
+
+---
+
+## Permitted forms of reuse
+
+### Composition — preferred for use cases
+
+Instantiate and call an existing use case from within a new use case.
+The outer use case takes the inner one as a constructor parameter (typed
+against its return type or a Protocol), calls `execute()`, and
+post-processes the result.
+
+```python
+class GetOrgConflictScorecardUseCase:
+    def __init__(self, scorecard_use_case: GetOrganizationScorecardUseCase, ...) -> None:
+        self._scorecard_uc = scorecard_use_case
+
+    def execute(self, ...) -> ...:
+        scorecard_a = self._scorecard_uc.execute(session_id, org_a_id, chamber)
+        scorecard_b = self._scorecard_uc.execute(session_id, org_b_id, chamber)
+        # post-process: intersect, filter, etc.
+```
+
+### Module-level helpers — preferred for pure functions
+
+If two use cases share a computation that has no side effects, extract
+it as a module-level function in a shared module both files import from.
+
+```python
+# shared/utils/vote_alignment.py
+def calculate_alignment(position: str, legislator_vote: str) -> str:
+    ...
+
+# Both use cases import:
+from legiscan_loader.shared.utils.vote_alignment import calculate_alignment
+```
+
+### Parameterisation — preferred for slight variations
+
+If an existing function almost covers the new requirement, add a
+parameter rather than duplicating it.
+
+---
+
+## Layer constraints on reuse
+
+Reuse must not violate the hexagonal import rules:
+
+| Layer trying to reuse | Can call | Cannot call |
+|---|---|---|
+| `application.use_cases` | other `application.use_cases` via constructor injection | `infrastructure` directly |
+| `application.use_cases` | `shared/` module-level helpers | `presentation` |
+| `infrastructure` | `shared/` module-level helpers | `application.use_cases` |
+| `presentation` | `application.use_cases` via factory | `infrastructure`, `domain` directly |
+
+If the only way to avoid duplication would violate a layer constraint,
+raise it explicitly rather than silently duplicating or silently
+violating the constraint.
+
+---
+
+## Shared utilities
+
+Pure, stateless helpers with no layer affiliation belong in:
+
+```
+legiscan_loader/shared/utils/<module>.py
+```
+
+These may be imported from any layer. Prefer this over duplicating the
+same logic in two use cases.
+
+---
+
+## See also
+
+- `clean-architecture-imports.mdc` — layer constraints that govern how reuse is structured.
+- `hexagonal-feature` skill — composition pattern for new use cases.
+- `mccabe-complexity.mdc` — extracting helpers also reduces complexity scores.

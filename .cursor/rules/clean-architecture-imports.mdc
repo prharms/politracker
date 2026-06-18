@@ -1,0 +1,140 @@
+# Hexagonal Architecture - Import Rules (TypeScript/Electron)
+
+## ZERO DISCRETION POLICY
+
+These rules have no exceptions. There is no scenario - not convenience,
+not a "temporary" workaround, not avoiding a circular import - that
+permits violating the layer import rules.
+
+Prohibited judgement calls:
+- "I'll import the Drizzle repository directly in the use case just this once." - No. Use a port interface and inject the repository.
+- "It's easier to import from `src/main/` in the renderer component." - No. Renderer communicates via IPC only.
+- "The renderer needs this type - I'll import it from `src/main/domain/`." - No. Shared types live in `src/shared/`. Move the type there.
+- "I'll import `ipcRenderer` directly in a React component." - No. Use `window.api.*` via the preload bridge.
+- "The IPC handler doesn't need to go through a use case - I'll query the DB directly." - No. IPC handlers call use cases only.
+
+---
+
+## Process boundary (most important rule)
+
+Electron runs two separate Node.js processes. They cannot share memory.
+
+**Main process** (`src/main/`) runs in Node.js. Has full filesystem and
+database access.
+
+**Renderer process** (`src/renderer/`) runs in Chromium. Has no direct
+Node.js access. `nodeIntegration` is `false`.
+
+**The only communication path between them is IPC**, via the typed
+`window.api.*` interface exposed by the preload context bridge.
+
+A renderer component that imports anything from `src/main/` will either
+fail at runtime (Node.js APIs unavailable) or create a security hole.
+ESLint import rules enforce this boundary statically.
+
+---
+
+## Layer map
+
+```
+Main process:
+  src/main/domain/           <- Entities, value objects, domain rules
+  src/main/application/      <- Use cases, port interfaces, DTOs, exceptions
+  src/main/infrastructure/   <- Drizzle repositories (implements ports)
+  src/main/ipc/              <- IPC handlers (calls use cases via container)
+  src/main/container.ts      <- Composition root (wires infra to ports)
+
+Renderer process:
+  src/renderer/components/   <- Reusable React components
+  src/renderer/pages/        <- Route-level page components
+  src/renderer/hooks/        <- Custom React hooks
+  src/renderer/api/          <- Typed IPC client wrappers (window.api.*)
+
+Preload:
+  src/preload/index.ts       <- contextBridge only - no logic
+
+Shared (importable from anywhere):
+  src/shared/dtos/           <- DTO interfaces
+  src/shared/ipc-types.ts    <- Typed IPC channel contracts
+  src/shared/constants.ts    <- Domain constants (categories, statuses, etc.)
+```
+
+---
+
+## Import rules
+
+**Renderer** (`src/renderer/`) may import from:
+- `src/renderer/` (other renderer files)
+- `src/shared/` (shared types and constants)
+- External npm packages
+
+**Renderer** may NOT import from:
+- `src/main/` (any file)
+- `src/preload/`
+
+**Main - domain** (`src/main/domain/`) may import from:
+- `src/shared/`
+- External npm packages with no Node.js-specific APIs
+
+**Main - domain** may NOT import from:
+- `src/main/application/`
+- `src/main/infrastructure/`
+- `src/main/ipc/`
+
+**Main - application** (`src/main/application/`) may import from:
+- `src/main/domain/`
+- `src/shared/`
+
+**Main - application** may NOT import from:
+- `src/main/infrastructure/`
+- `src/main/ipc/`
+- `src/renderer/`
+
+**Main - infrastructure** (`src/main/infrastructure/`) may import from:
+- `src/main/domain/`
+- `src/main/application/` (ports and DTOs only)
+- `src/shared/`
+
+**Main - ipc** (`src/main/ipc/`) may import from:
+- `src/main/application/` (use cases via container)
+- `src/shared/`
+
+**Main - ipc** may NOT import from:
+- `src/main/infrastructure/` (directly)
+- `src/main/domain/` (directly - use DTOs)
+- `src/renderer/`
+
+---
+
+## Ports and adapters
+
+- **Ports** live in `src/main/application/ports/` as TypeScript `interface`
+  definitions.
+- **Adapters** (implementations) live in `src/main/infrastructure/repositories/`.
+- Use cases receive port interfaces via constructor injection, never
+  concrete repository classes.
+- `src/main/container.ts` is the only place concrete repositories are
+  instantiated and injected into use cases.
+
+---
+
+## IPC as the presentation layer
+
+IPC handlers in `src/main/ipc/` are the equivalent of Flask routes or CLI
+commands. They:
+1. Receive typed parameters from the renderer via IPC.
+2. Call a use case via the container.
+3. Return a plain DTO (no domain entity, no class instance) to the renderer.
+4. Catch errors, log them, and return a typed error response - never let
+   an unhandled exception crash the main process.
+
+The renderer never knows whether data came from SQLite, a cache, or
+anywhere else. It only sees the DTO.
+
+---
+
+## Enforced by ESLint
+
+The import rules above are enforced by ESLint with `eslint-plugin-import`
+and path alias restrictions in `tsconfig.json`. A renderer import of a main
+process file is a lint error.
