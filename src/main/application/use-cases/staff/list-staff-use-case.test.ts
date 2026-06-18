@@ -11,7 +11,8 @@ const stubStaff: StaffDto[] = [
 const mockRepo: StaffRepositoryPort = {
   listAll: vi.fn().mockReturnValue(stubStaff),
   findById: vi.fn().mockReturnValue(null),
-  create: vi.fn()
+  create: vi.fn(),
+  updateStatus: vi.fn()
 }
 
 describe('ListStaffUseCase', () => {

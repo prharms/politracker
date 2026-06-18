@@ -7,7 +7,13 @@ import { openDatabase } from './infrastructure/db/database'
 if (process.env['LOCALAPPDATA']) {
   app.setPath('userData', path.join(process.env['LOCALAPPDATA'], 'Politicket'))
 }
-import { makeListStaffUseCase, makeListProjectsUseCase, makeListTasksUseCase } from './container'
+import {
+  makeListStaffUseCase,
+  makeCreateStaffUseCase,
+  makeUpdateStaffStatusUseCase,
+  makeListProjectsUseCase,
+  makeListTasksUseCase
+} from './container'
 import { registerAllHandlers } from './ipc/index'
 
 /** Create the main application window. */
@@ -40,6 +46,8 @@ app.whenReady().then(() => {
   const db = openDatabase()
   registerAllHandlers(
     makeListStaffUseCase(db),
+    makeCreateStaffUseCase(db),
+    makeUpdateStaffStatusUseCase(db),
     makeListProjectsUseCase(db),
     makeListTasksUseCase(db)
   )

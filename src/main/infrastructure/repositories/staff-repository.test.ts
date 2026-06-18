@@ -42,4 +42,18 @@ describe('StaffRepository', () => {
   it('findById returns null for an unknown id', () => {
     expect(repo.findById('nonexistent')).toBeNull()
   })
+
+  it('updateStatus changes the status of the given record', () => {
+    const created = repo.create({ name: 'Carol', status: 'Active' })
+    const updated = repo.updateStatus(created.id, 'Inactive')
+    expect(updated.id).toBe(created.id)
+    expect(updated.status).toBe('Inactive')
+  })
+
+  it('updateStatus returns the full updated record', () => {
+    const created = repo.create({ name: 'Dave', status: 'Inactive' })
+    const updated = repo.updateStatus(created.id, 'Active')
+    expect(updated.name).toBe('Dave')
+    expect(updated.status).toBe('Active')
+  })
 })

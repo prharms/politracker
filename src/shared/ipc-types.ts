@@ -1,5 +1,5 @@
 import type { TaskDto, TaskListFilters } from './dtos/task-dto'
-import type { StaffDto } from './dtos/staff-dto'
+import type { StaffDto, NewStaffInput } from './dtos/staff-dto'
 import type { ProjectDto } from './dtos/project-dto'
 
 /** Typed API for task IPC channels. */
@@ -10,6 +10,8 @@ export interface TasksAPI {
 /** Typed API for staff IPC channels. */
 export interface StaffAPI {
   list: () => Promise<StaffDto[]>
+  create: (input: NewStaffInput) => Promise<StaffDto>
+  updateStatus: (id: string, status: 'Active' | 'Inactive') => Promise<StaffDto>
 }
 
 /** Typed API for project IPC channels. */

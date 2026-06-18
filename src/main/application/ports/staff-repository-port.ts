@@ -10,4 +10,7 @@ export interface StaffRepositoryPort {
 
   /** Persist a new staff record and return it. */
   create(input: NewStaffInput): StaffDto
+
+  /** Update a staff member's active status and return the updated record. */
+  updateStatus(id: string, status: 'Active' | 'Inactive'): StaffDto
 }

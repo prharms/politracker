@@ -10,6 +10,8 @@ import { DeliverableRepository } from './infrastructure/repositories/deliverable
 import { TaskRepository } from './infrastructure/repositories/task-repository'
 
 import { ListStaffUseCase } from './application/use-cases/staff/list-staff-use-case'
+import { CreateStaffUseCase } from './application/use-cases/staff/create-staff-use-case'
+import { UpdateStaffStatusUseCase } from './application/use-cases/staff/update-staff-status-use-case'
 import { ListProjectsUseCase } from './application/use-cases/projects/list-projects-use-case'
 import { ListDeliverablesUseCase } from './application/use-cases/deliverables/list-deliverables-use-case'
 import { ListTasksUseCase } from './application/use-cases/tasks/list-tasks-use-case'
@@ -17,6 +19,16 @@ import { ListTasksUseCase } from './application/use-cases/tasks/list-tasks-use-c
 /** Build a ListStaffUseCase wired to the Drizzle repository. */
 export function makeListStaffUseCase(db: BetterSQLite3Database): ListStaffUseCase {
   return new ListStaffUseCase(new StaffRepository(db))
+}
+
+/** Build a CreateStaffUseCase wired to the Drizzle repository. */
+export function makeCreateStaffUseCase(db: BetterSQLite3Database): CreateStaffUseCase {
+  return new CreateStaffUseCase(new StaffRepository(db))
+}
+
+/** Build an UpdateStaffStatusUseCase wired to the Drizzle repository. */
+export function makeUpdateStaffStatusUseCase(db: BetterSQLite3Database): UpdateStaffStatusUseCase {
+  return new UpdateStaffStatusUseCase(new StaffRepository(db))
 }
 
 /** Build a ListProjectsUseCase wired to the Drizzle repository. */

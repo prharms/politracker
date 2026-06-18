@@ -11,3 +11,8 @@ export interface NewStaffInput {
   name: string
   status: 'Active' | 'Inactive'
 }
+
+/** Fields required to update a staff member's active status. */
+export interface UpdateStaffStatusInput {
+  status: 'Active' | 'Inactive'
+}

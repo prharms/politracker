@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   makeListStaffUseCase,
+  makeCreateStaffUseCase,
+  makeUpdateStaffStatusUseCase,
   makeListProjectsUseCase,
   makeListDeliverablesUseCase,
   makeListTasksUseCase
@@ -12,6 +14,16 @@ const mockDb = {} as BetterSQLite3Database
 describe('container factories', () => {
   it('makeListStaffUseCase returns a use case with an execute method', () => {
     const uc = makeListStaffUseCase(mockDb)
+    expect(typeof uc.execute).toBe('function')
+  })
+
+  it('makeCreateStaffUseCase returns a use case with an execute method', () => {
+    const uc = makeCreateStaffUseCase(mockDb)
+    expect(typeof uc.execute).toBe('function')
+  })
+
+  it('makeUpdateStaffStatusUseCase returns a use case with an execute method', () => {
+    const uc = makeUpdateStaffStatusUseCase(mockDb)
     expect(typeof uc.execute).toBe('function')
   })
 

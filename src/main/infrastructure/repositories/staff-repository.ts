@@ -35,4 +35,12 @@ export class StaffRepository implements StaffRepositoryPort {
       .run()
     return record
   }
+
+  /** Update a staff member's active status and return the updated record. */
+  updateStatus(id: string, status: 'Active' | 'Inactive'): StaffDto {
+    this.db.update(staff).set({ status }).where(eq(staff.id, id)).run()
+    const updated = this.findById(id)
+    if (!updated) throw new Error(`Staff record not found: ${id}`)
+    return updated
+  }
 }
