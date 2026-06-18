@@ -1,0 +1,97 @@
+.row {
+  display: grid;
+  grid-template-columns: 1fr 16ch 16ch 10ch 13ch 14ch 10ch 9ch;
+  align-items: center;
+  padding: 2px 12px;
+  border-bottom: 1px solid #0d0d0d;
+  font-family: 'Courier New', monospace;
+  font-size: 26px;
+  color: #e8e8e8;
+  cursor: default;
+  gap: 8px;
+}
+
+.row:hover {
+  background: #111111;
+}
+
+.row.urgent {
+  color: #ff3333;
+}
+
+.row.closed {
+  color: #e8e8e8;
+}
+
+.title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e8e8e8;
+}
+
+.category {
+  color: #00aa55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 24px;
+}
+
+.type {
+  color: #e8e8e8;
+  white-space: nowrap;
+  font-size: 24px;
+}
+
+.status {
+  white-space: nowrap;
+  font-size: 24px;
+  text-transform: uppercase;
+}
+
+.staff {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e8e8e8;
+}
+
+.age {
+  color: #e8e8e8;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 24px;
+}
+
+.age.stale {
+  color: #ff3333;
+}
+
+.priority {
+  white-space: nowrap;
+  font-size: 24px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 1fr 16ch 16ch 10ch 13ch 14ch 10ch 9ch;
+  align-items: center;
+  padding: 3px 12px;
+  border-bottom: 1px solid #333333;
+  font-family: 'Courier New', monospace;
+  font-size: 22px;
+  color: #00aa55;
+  gap: 8px;
+  background: #000000;
+  position: sticky;
+  top: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

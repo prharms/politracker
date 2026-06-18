@@ -8,6 +8,6 @@
     "declarationDir": "../../../out/types/ipc",
     "outDir": "../../../out/types/ipc"
   },
-  "references": [{ "path": "../application" }],
+  "references": [{ "path": "../application" }, { "path": "../../shared" }],
   "include": ["**/*.ts"]
 }

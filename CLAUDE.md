@@ -2,10 +2,10 @@
 
 ## Purpose
 
-Politicket is a local, single-user desktop application for managing opposition
+Politicket is a local, single-user desktop application for tracking opposition
 research production. The principal uses it to track clients, projects, research
 targets (subjects), staff assignments, tasks, and deliverables across active
-engagements. It is a production management tool for a team of 5-10 researchers
+engagements. It is a production tracking tool for a team of 5-10 researchers
 working across multiple project types. It runs as an Electron desktop
 application - no browser chrome, no tabs, no address bar. No login or
 authentication is required.
@@ -228,28 +228,23 @@ scraping, or file import in the current scope.
 
 ## Presentation
 
-**Visual style:** 1988 green phosphor CRT terminal with orange and purple accents.
+**Visual style:** Professional dark terminal aesthetic. Two-color system: white
+for content, green for labels and accents. No gray anywhere.
 
 Colors:
 
-- Background: `#0a0f0a` (near-black with green tint)
-- Primary text: `#33ff33` (bright phosphor green)
-- Dim text: `#1a7a1a` (low-brightness green for secondary info)
-- Orange accent: `#ff6600` (active states, selected rows, urgent priority, focus)
-- Purple accent: `#cc44ff` (labels, categories, metadata, tags)
-- Border/divider: `#1a4a1a` (dark green)
+- Background: `#000000` (pure black)
+- Primary text: `#e8e8e8` (near-white for all content)
+- Accent: `#00aa55` (dark green for headers, labels, nav brackets, active states)
+- Urgent/error: `#ff3333` (red for urgent priority and stale age indicators)
+- Border: `#1e1e1e` (subtle row dividers), `#333333` (section dividers)
 
-CRT effects:
+No glow effects, no shadows, no gradients.
 
-- Phosphor glow on all text: `text-shadow: 0 0 8px #33ff33, 0 0 2px #33ff33`
+Font: `Courier New`, monospace, 26px. No other fonts anywhere in the application.
 
-Font: `VT323` (Google Fonts - authentic VT100 terminal appearance), fallback
-`Courier New`. No other fonts anywhere in the application.
-
-Layout: character-based. Borders use ASCII box-drawing characters or plain
-`+`, `-`, `|`. No rounded corners anywhere except the root container.
-No shadows, no gradients, no decorative elements. Dense, compact, every
-pixel carries information.
+Layout: dense, compact, character-based grid using `ch` units for columns.
+Every pixel carries information.
 
 CSS: custom CSS modules per component, no UI framework.
 Global styles in `src/renderer/styles/terminal.css`.

@@ -7,17 +7,23 @@
 }
 
 :root {
-  --bg: #0a0f0a;
-  --green: #33ff33;
-  --green-dim: #1a7a1a;
-  --green-border: #1a4a1a;
-  --orange: #ff6600;
-  --purple: #cc44ff;
-  --glow-green: 0 0 8px #33ff33, 0 0 2px #33ff33;
-  --glow-orange: 0 0 8px #ff6600, 0 0 2px #ff6600;
-  --glow-purple: 0 0 8px #cc44ff, 0 0 2px #cc44ff;
-  --font: 'VT323', 'Courier New', monospace;
-  --font-size: 18px;
+  --bg: #000000;
+  --bg-row: #0a0a0a;
+  --bg-hover: #111111;
+  --bg-selected: #1a1400;
+  --text: #e8e8e8;
+  --text-dim: #e8e8e8;
+  --text-muted: #e8e8e8;
+  --accent: #00aa55;
+  --accent-dim: #006633;
+  --white: #ffffff;
+  --red: #ff3333;
+  --green-ok: #00cc44;
+  --border: #1e1e1e;
+  --border-bright: #333333;
+  --font: 'Courier New', 'Courier', monospace;
+  --font-size: 26px;
+  --font-size-sm: 24px;
 }
 
 html,
@@ -26,11 +32,10 @@ body,
   width: 100%;
   height: 100%;
   background: var(--bg);
-  color: var(--green);
+  color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
-  text-shadow: var(--glow-green);
-  -webkit-font-smoothing: none;
+  -webkit-font-smoothing: antialiased;
   overflow: hidden;
   cursor: default;
   user-select: none;
@@ -44,20 +49,17 @@ h1,
 h2,
 h3 {
   font-family: var(--font);
-  font-weight: normal;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
 }
 
 a {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
+  color: var(--accent);
   text-decoration: none;
 }
 
 a:hover {
-  color: var(--green);
-  text-shadow: var(--glow-green);
+  color: var(--white);
 }
 
 /* ------------------------------------------------------------------ */
@@ -76,37 +78,37 @@ table {
 }
 
 thead th {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
-  border-bottom: 1px solid var(--green-border);
-  padding: 4px 8px;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border-bright);
+  padding: 3px 8px;
   text-align: left;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   font-weight: normal;
+  font-size: var(--font-size-sm);
   position: sticky;
   top: 0;
   background: var(--bg);
 }
 
 tbody tr {
-  border-bottom: 1px solid var(--green-border);
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
 
 tbody tr:hover td {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
+  background: var(--bg-hover);
 }
 
 tbody tr.selected td {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
+  background: var(--bg-selected);
+  color: var(--accent);
 }
 
 td {
-  padding: 3px 8px;
+  padding: 2px 8px;
   white-space: nowrap;
+  color: var(--text);
 }
 
 /* ------------------------------------------------------------------ */
@@ -115,41 +117,37 @@ td {
 
 .badge {
   display: inline-block;
-  padding: 0 6px;
+  padding: 0 5px;
   border: 1px solid currentColor;
-  font-size: 14px;
-  letter-spacing: 1px;
+  font-size: var(--font-size-sm);
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .badge-active,
 .badge-in-progress {
-  color: var(--green);
-  text-shadow: var(--glow-green);
-  border-color: var(--green);
+  color: var(--green-ok);
+  border-color: var(--green-ok);
 }
 
 .badge-review,
 .badge-urgent {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
-  border-color: var(--orange);
+  color: var(--red);
+  border-color: var(--red);
 }
 
 .badge-closed,
 .badge-archived,
 .badge-inactive {
-  color: var(--purple);
-  text-shadow: var(--glow-purple);
-  border-color: var(--purple);
+  color: var(--text-muted);
+  border-color: var(--text-muted);
 }
 
 .badge-backlog,
 .badge-draft,
 .badge-low {
-  color: var(--green-dim);
-  text-shadow: none;
-  border-color: var(--green-border);
+  color: var(--text-dim);
+  border-color: var(--text-muted);
 }
 
 /* ------------------------------------------------------------------ */
@@ -158,10 +156,8 @@ td {
 
 .tag {
   display: inline-block;
-  color: var(--purple);
-  text-shadow: var(--glow-purple);
-  font-size: 14px;
-  letter-spacing: 1px;
+  color: var(--accent);
+  font-size: var(--font-size-sm);
 }
 
 /* ------------------------------------------------------------------ */
@@ -180,29 +176,26 @@ td {
   gap: 4px;
   cursor: pointer;
   font-size: var(--font-size);
-  color: var(--green-dim);
-  text-shadow: none;
+  color: var(--text-dim);
 }
 
 .radio-option input[type='radio'] {
   appearance: none;
-  width: 12px;
-  height: 12px;
-  border: 1px solid var(--green-dim);
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--text-muted);
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 .radio-option input[type='radio']:checked {
-  background: var(--orange);
-  border-color: var(--orange);
-  box-shadow: var(--glow-orange);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .radio-option:has(input:checked) {
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
+  color: var(--accent);
 }
 
 /* ------------------------------------------------------------------ */
@@ -214,12 +207,11 @@ input[type='date'],
 textarea,
 select {
   background: var(--bg);
-  border: 1px solid var(--green-border);
-  color: var(--green);
+  border: 1px solid var(--border-bright);
+  color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
-  text-shadow: var(--glow-green);
-  padding: 4px 8px;
+  padding: 3px 6px;
   outline: none;
   width: 100%;
 }
@@ -228,8 +220,7 @@ input[type='text']:focus,
 input[type='date']:focus,
 textarea:focus,
 select:focus {
-  border-color: var(--orange);
-  box-shadow: 0 0 4px var(--orange);
+  border-color: var(--accent);
 }
 
 /* ------------------------------------------------------------------ */
@@ -238,33 +229,30 @@ select:focus {
 
 button {
   background: transparent;
-  border: 1px solid var(--green);
-  color: var(--green);
+  border: 1px solid var(--border-bright);
+  color: var(--text);
   font-family: var(--font);
   font-size: var(--font-size);
-  text-shadow: var(--glow-green);
-  padding: 4px 16px;
+  padding: 3px 12px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 button:hover {
-  background: var(--green);
-  color: var(--bg);
-  text-shadow: none;
+  background: var(--bg-hover);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 button.btn-primary {
-  border-color: var(--orange);
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 button.btn-primary:hover {
-  background: var(--orange);
+  background: var(--accent);
   color: var(--bg);
-  text-shadow: none;
 }
 
 /* ------------------------------------------------------------------ */
@@ -277,16 +265,16 @@ button.btn-primary:hover {
   align-items: center;
   justify-content: center;
   padding: 48px;
-  gap: 8px;
-  color: var(--green-dim);
-  text-shadow: none;
+  gap: 6px;
+  color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  font-size: var(--font-size-sm);
 }
 
 .empty-state-hint {
-  font-size: 14px;
-  color: var(--green-border);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
 }
 
 /* ------------------------------------------------------------------ */
@@ -294,10 +282,10 @@ button.btn-primary:hover {
 /* ------------------------------------------------------------------ */
 
 .loading {
-  color: var(--green-dim);
-  text-shadow: none;
+  color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  font-size: var(--font-size-sm);
   animation: blink 1s step-end infinite;
 }
 
@@ -317,8 +305,8 @@ button.btn-primary:hover {
 
 hr {
   border: none;
-  border-top: 1px solid var(--green-border);
-  margin: 8px 0;
+  border-top: 1px solid var(--border);
+  margin: 6px 0;
 }
 
 /* ------------------------------------------------------------------ */
@@ -326,8 +314,8 @@ hr {
 /* ------------------------------------------------------------------ */
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -335,9 +323,9 @@ hr {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--green-border);
+  background: var(--border-bright);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--green-dim);
+  background: var(--text-dim);
 }

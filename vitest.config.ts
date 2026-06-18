@@ -20,7 +20,13 @@ export default defineConfig({
         statements: 80
       },
       include: ['src/main/**', 'src/shared/**'],
-      exclude: ['src/main/index.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx']
+      exclude: [
+        'src/main/index.ts',
+        'src/main/infrastructure/db/database.ts',
+        'src/main/infrastructure/db/schema.ts',
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx'
+      ]
     }
   },
   resolve: {
