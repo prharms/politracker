@@ -50,9 +50,28 @@ main process) + Drizzle ORM (TypeScript-first query builder and schema
 manager). Database file path read from environment variable
 `POLITICKET_DB_PATH` (default: `politicket.db` in the user data directory).
 
-**Import enforcement:** ESLint import rules enforce that renderer code never
-imports from `src/main/` and main code never imports from `src/renderer/`.
-The `src/shared/` directory is the only cross-process import surface.
+**Import enforcement:** Two-mechanism enforcement per ADR-0001.
+
+- TypeScript project references (`tsc --build src/main/tsconfig.json`) enforce
+  layer contracts at compile time. Violations are build errors - not warnings,
+  not suppressible. Transitive violations are blocked structurally: a layer
+  cannot see modules its referenced layers cannot see.
+- `eslint-plugin-boundaries` in `eslint.config.mjs` enforces the same rules
+  at lint time for fast IDE feedback.
+
+Each layer directory under `src/main/` has its own `tsconfig.json` with
+`composite: true` and a `references` array limited to allowed layers:
+
+```
+domain/tsconfig.json        references: []
+application/tsconfig.json   references: [domain]
+infrastructure/tsconfig.json references: [domain, application]
+ipc/tsconfig.json           references: [application]
+tsconfig.json (root)        references: [domain, application, infrastructure, ipc]
+```
+
+`container.ts` is the composition root and the only file permitted to import
+from all layers. Run architecture check: `./make.ps1 arch-check`.
 
 ---
 
@@ -263,8 +282,13 @@ Global styles in `src/renderer/styles/terminal.css`.
 `src/renderer/` (UI components harder to cover meaningfully).
 Enforced by `@vitest/coverage-v8` via `./make.ps1 test`.
 
-**Linter suite:** `./make.ps1 lint` runs: `tsc --noEmit`, `eslint`,
-`prettier --check`, `detect-secrets scan`.
+**Linter suite:** `./make.ps1 lint` runs in order:
+
+1. `tsc -p tsconfig.node.json --noEmit` - type-check main process + config files
+2. `tsc -p tsconfig.web.json --noEmit` - type-check renderer
+3. `npm run arch-check` (`tsc --build src/main/tsconfig.json`) - hexagonal layer contracts
+4. `eslint .` - style, complexity, JSDoc, `eslint-plugin-boundaries` layer rules
+5. `prettier --check .` - formatting
 
 **Test tools:**
 
@@ -287,8 +311,9 @@ better-sqlite3. Schema applied via Drizzle's `migrate` in the test fixture.
 - `./make.ps1 test-fast` - vitest run (no coverage, faster iteration)
 - `./make.ps1 test-e2e` - playwright test
 - `./make.ps1 test-all` - test + test-e2e in sequence
-- `./make.ps1 lint` - tsc + eslint + prettier --check + detect-secrets
-- `./make.ps1 type-check` - tsc --noEmit only
+- `./make.ps1 lint` - full suite: tsc + arch-check + eslint + prettier
+- `./make.ps1 arch-check` - tsc --build: hexagonal layer contract enforcement
+- `./make.ps1 type-check` - tsc --noEmit only (no arch-check)
 - `./make.ps1 format` - prettier --write + eslint --fix
 - `./make.ps1 dev` - electron-vite dev (hot reload)
 - `./make.ps1 build` - electron-vite build + electron-builder
@@ -328,11 +353,15 @@ npm install
 - `pre-feature-planning` - before adding any new feature
 - `detect-secrets-ci` - add detect-secrets baseline after first real code
 
+**TypeScript-adapted skills (use these):**
+
+- `hexagonal-feature` - rewritten for TypeScript/Electron/Drizzle
+- `lint-imports-setup` - rewritten for TypeScript project references + eslint-plugin-boundaries
+
 **Python-specific skills that are inapplicable:**
 
-- `flask-app-factory`, `sqlite-sqlalchemy-core`, `hexagonal-feature`,
-  `alembic-migration`, `polite-scraping`, `db-query-script`,
-  `clean-error-messages`, `html-routes`
+- `flask-app-factory`, `sqlite-sqlalchemy-core`, `alembic-migration`,
+  `polite-scraping`, `db-query-script`, `clean-error-messages`, `html-routes`
 
 ---
 

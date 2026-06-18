@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declarationDir": "../../out/types/main",
+    "outDir": "../../out/types/main"
+  },
+  "references": [
+    { "path": "domain" },
+    { "path": "application" },
+    { "path": "infrastructure" },
+    { "path": "ipc" }
+  ],
+  "include": ["index.ts"]
+}

@@ -1,676 +1,466 @@
 ---
 name: hexagonal-feature
-description: Step-by-step workflow for implementing a new feature end-to-end in this project's hexagonal (ports and adapters) architecture. Use when adding a new use case, repository, CLI command, or any feature that touches more than one layer. Prevents the most common failure mode: writing concrete infrastructure imports inside application-layer files, which causes lint-imports to fail.
+description: >-
+  Step-by-step workflow for implementing a new feature end-to-end in
+  Politicket's hexagonal architecture (TypeScript/Electron). Use when adding a
+  new use case, repository, IPC handler, or any feature that touches more than
+  one layer. Prevents the most common failure mode: importing a concrete
+  repository inside a use case, which fails tsc --build (arch-check).
 ---
 
-# Implementing a New Feature End-to-End (Hexagonal Architecture)
+# Implementing a New Feature End-to-End (TypeScript/Electron)
 
 ## The single most common failure mode
 
-The agent writes a use case like this:
+A use case imports the concrete repository class:
 
-```python
-# WRONG — infrastructure import inside application layer
-from irs_data.infrastructure.persistence.filing_repository import FilingRepository
+```typescript
+// WRONG - infrastructure import inside application layer
+// This fails tsc --build because application/tsconfig.json does not reference infrastructure
+import { StaffRepository } from '../../infrastructure/repositories/staff-repository'
 
-class FilingUseCase:
-    def __init__(self, repository: FilingRepository) -> None:  # concrete type
+export class ListStaffUseCase {
+  constructor(private repo: StaffRepository) {} // concrete type - wrong
+}
 ```
-
-This fails `lint-imports` immediately. `application` must never import from
-`infrastructure`. The use case must be typed against the **Port**, not the
-concrete class.
 
 The correct form:
 
-```python
-# CORRECT — application imports only from application/ports
-from irs_data.application.ports.filing_repository_port import FilingRepositoryPort
+```typescript
+// CORRECT - application imports only from application/ports
+import type { StaffRepositoryPort } from '../ports/staff-repository-port'
 
-class FilingUseCase:
-    def __init__(self, repository: FilingRepositoryPort) -> None:  # Protocol type
+export class ListStaffUseCase {
+  constructor(private repo: StaffRepositoryPort) {} // interface type - correct
+}
 ```
 
-The concrete class (`FilingRepository`) is imported in **exactly one place**: inside the
-factory method in `container.py`. Nowhere else.
+The concrete class (`StaffRepository`) is imported in **exactly one place**:
+inside a factory function in `container.ts`. Nowhere else.
 
 ---
 
-## Step 0 — Create a feature branch
-
-A new hexagonal feature always touches at least 5 files. This meets the mandatory
-branching threshold in `git-branching.mdc`. Create the branch before writing any code.
+## Step 0 - Create a feature branch
 
 ```powershell
 git checkout -b feature/<short-description>
 ```
 
-Use `feature/` for new functionality, `fix/` for bug fixes, `refactor/` for
-restructuring. Never commit new Python logic directly to `main`.
+A new hexagonal feature always touches at least 5 files. This meets the
+branching threshold. Never commit new logic directly to `main`.
 
 ---
 
-## Implementation order — follow this sequence
+## Implementation order - follow this sequence
 
-Always build in this order. Each step has a hard import constraint. Violating the
-constraint causes `lint-imports` to fail.
+Build in this order. Each step imports only from steps that came before it.
 
 ```
-Step 1 → Port          application/ports/
-Step 2 → Domain entity domain/                (skip if entity already exists)
-Step 3 → Repository    infrastructure/persistence/
-Step 4 → DTO           application/dtos/      (skip if DTO already exists)
-Step 5 → Use case      application/use_cases/<topic>/
-Step 6 → Container     container.py
-Step 7 → CLI command   presentation/cli/commands/
-Step 8 → Write tests
-```
-
-The order matters because each step imports only from steps that came before it.
-Writing the use case before the port causes the wrong import to be written.
-
----
-
-## Step 1 — Define the port
-
-**File:** `irs_data/application/ports/<snake_case>_repository_port.py`
-**Class name:** `FooRepositoryPort`
-
-```python
-"""Repository port for <description>."""
-
-from __future__ import annotations
-
-from typing import List, Optional, Protocol
-
-from irs_data.domain.<module> import FooDomainEntity
-
-
-class FooRepositoryPort(Protocol):
-    """Port for persisting and retrieving Foo entities."""
-
-    def get_all(self) -> List[FooDomainEntity]:
-        """Return all Foo records."""
-        ...
-
-    def find_by_id(self, foo_id: int) -> Optional[FooDomainEntity]:
-        """Return one Foo by ID, or None if it does not exist."""
-        ...
-
-    def save(self, entity: FooDomainEntity) -> FooDomainEntity:
-        """Create or update a Foo and return the persisted entity."""
-        ...
-```
-
-**Import constraints:**
-- May import from: `domain`, `typing`, `__future__`
-- Must NOT import from: `infrastructure`, `application.use_cases`, `presentation`, `container`
-
-**Rules:**
-- Inherits `Protocol` — no `@runtime_checkable` unless explicitly required.
-- Method bodies are `...` (ellipsis) — no implementation.
-- Every method must have a docstring and return type annotation.
-
----
-
-## Step 2 — Domain layer additions (if new)
-
-Skip this step if the required domain types already exist. If anything new is
-needed, use the guidance below to decide what type of domain object to create
-and where to put it.
-
----
-
-### 2a — Choose the right type of domain object
-
-| What you need | Type | Pattern |
-|---|---|---|
-| A named concept with identity that persists over time (a Filing, a Contractor) | **Entity** | `@dataclass(frozen=True)` with an ID field; validation at construction |
-| An immutable descriptor defined entirely by its value (a tax year, an EIN) | **Value object** | `@dataclass(frozen=True)`; no ID; equality is value equality |
-| A computation over domain data with no side effects | **Rule function** | Module-level `def` returning a plain value; no class needed |
-| A fixed set of named values | **Enum** | `class FooType(str, Enum)` |
-| A signal that a domain invariant was violated | **Domain exception** | `class InvalidFooError(ValueError)` — inherits `ValueError`, not `Exception` |
-| A threshold, cap, or magic number used in more than one place | **Domain constant** | Module-level `_CONSTANT_NAME: int = 7`; underscore prefix, type-annotated |
-
-**Default to `frozen=True`.** Mutable domain objects are the exception, not
-the rule.
-
----
-
-### 2b — Choose the right location
-
-| Type of addition | Location |
-|---|---|
-| Project-specific concept (a Filing, a Contractor) | `irs_data/domain/<topic>/<snake_case>.py` |
-| Reusable pure utility with no project-specific knowledge | `irs_data/shared/utils/<snake_case>.py` |
-| Cross-cutting domain protocol (e.g. `DBSessionProtocol`) | `irs_data/domain/protocols.py` |
-| Domain exception for a specific module | `irs_data/domain/<topic>/exceptions.py` |
-
-Put things in `domain/` when they encode a rule or concept specific to this
-project's subject matter (IRS 990 filings, tax-exempt status, contractor records).
-Put things in `shared/` when they are pure utilities with no subject-matter
-knowledge (string formatting, date arithmetic, generic normalization).
-
----
-
-### 2c — Entity and value object pattern
-
-```python
-"""Domain entity for <description>."""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class FooDomainEntity:
-    """<One-sentence description of what this entity represents>."""
-
-    foo_id: int
-    name: str
-
-    def __post_init__(self) -> None:
-        """Validate invariants at construction time."""
-        if not self.name:
-            raise InvalidFooError("name must not be empty")
-        if self.foo_id <= 0:
-            raise InvalidFooError(f"foo_id must be positive, got {self.foo_id}")
-
-
-class InvalidFooError(ValueError):
-    """Raised when a Foo entity cannot be constructed from invalid data."""
-```
-
-**Rules:**
-- Validate in `__post_init__`, not in a setter or repository.
-- Raise a domain exception (`InvalidFooError(ValueError)`), never `AssertionError`.
-- No methods that call repositories, session objects, or external services.
-- No imports from `application`, `infrastructure`, or `presentation`.
-
----
-
-### 2d — Rule function pattern
-
-Pure functions that express a domain rule belong at module level, not in a class.
-
-```python
-"""Domain rules for IRS 990 filing classification."""
-
-# Threshold is a domain constant — name it, don't inline the magic number.
-_CONTRACTOR_DISCLOSURE_THRESHOLD = 100_000
-
-
-def requires_contractor_disclosure(compensation: int) -> bool:
-    """Return True when a contractor must be disclosed on Part VII Section B."""
-    return compensation >= _CONTRACTOR_DISCLOSURE_THRESHOLD
+Step 1 -> Port interface     src/main/application/ports/
+Step 2 -> Domain entity      src/main/domain/           (skip if exists)
+Step 3 -> Repository         src/main/infrastructure/repositories/
+Step 4 -> DTO                src/main/application/dtos/ (skip if exists)
+Step 5 -> Use case           src/main/application/use-cases/
+Step 6 -> Container          src/main/container.ts
+Step 7 -> IPC handler        src/main/ipc/handlers/
+Step 8 -> IPC registration   src/main/ipc/index.ts + src/preload/index.ts
+Step 9 -> Renderer hook/API  src/renderer/api/ + src/renderer/hooks/
+Step 10 -> Write tests
 ```
 
 ---
 
-### 2e — Import constraints for domain files
+## Step 1 - Port interface
 
-Domain files may import from:
-- `typing`, `__future__`, `dataclasses`, `enum`, `datetime`, `decimal` — stdlib only
-- Other modules within `irs_data/domain/` (sibling domain modules)
+**File:** `src/main/application/ports/[entity]-repository-port.ts`
 
-Domain files must **never** import from:
-- `irs_data.application.*`
-- `irs_data.infrastructure.*`
-- `irs_data.presentation.*`
-- `irs_data.container`
+```typescript
+/** Repository port for [entity] persistence. */
 
-**The runtime import trap — read this before writing any domain type:**
+export interface StaffRepositoryPort {
+  /** Return all staff records ordered by name. */
+  listAll(): StaffDto[]
 
-If a domain type is imported at runtime (not under `TYPE_CHECKING`) in a use
-case file, and a CLI command imports that use case, `lint-imports` will fail
-with a transitive path violation:
+  /** Return a single staff record by id, or null if not found. */
+  findById(id: string): StaffDto | null
 
-```
-presentation/cli/foo_commands.py
-  → application/use_cases/foo_use_case.py
-    → domain/filing_rules.py          ← forbidden transitive path
+  /** Persist a new staff record and return it with generated id and timestamps. */
+  create(input: NewStaffInput): StaffDto
+
+  /** Update an existing staff record and return the updated version. */
+  update(id: string, input: Partial<NewStaffInput>): StaffDto
+}
 ```
 
-Fix: either move the domain reference to a string/numeric literal inside the
-use case, or place the import under `TYPE_CHECKING` (type annotations only).
+**Import rules:**
+- May import from: `src/main/application/dtos/`, `src/shared/`
+- Must NOT import from: `infrastructure`, `ipc`, `renderer`
 
 ---
 
-## Step 3 — Infrastructure repository
+## Step 2 - Domain entity (if new)
 
-**File:** `irs_data/infrastructure/persistence/<snake_case>_repository.py`
-**Class name:** `FooRepository` (drops the `Port` suffix)
+**File:** `src/main/domain/[entity].ts`
 
-```python
-"""Infrastructure adapter: persistence for <table>."""
+Domain entities are plain TypeScript interfaces or classes with validation.
+They describe the business concept, not the database shape.
 
-from __future__ import annotations
+```typescript
+/** Domain entity representing a staff member. */
 
-from typing import List, Optional, cast
+export interface Staff {
+  readonly id: string
+  readonly name: string
+  readonly status: 'Active' | 'Inactive'
+  readonly createdAt: string
+}
 
-from sqlalchemy.exc import SQLAlchemyError
-
-from irs_data.domain.protocols import DBSessionProtocol
-from irs_data.domain.<module> import FooDomainEntity
-from irs_data.infrastructure.persistence.orm_models import FooOrmModel
-from irs_data.shared.exceptions import RepositoryError
-
-
-class FooRepository:
-    """Persist and retrieve Foo domain entities."""
-
-    def __init__(self, db_session: DBSessionProtocol) -> None:
-        """Initialise with a database session."""
-        self._db_session = db_session
-
-    def get_all(self) -> List[FooDomainEntity]:
-        """Return all Foo records."""
-        try:
-            orm_objs = self._db_session.query(FooOrmModel).all()
-            return [self._to_domain(obj) for obj in orm_objs]
-        except SQLAlchemyError as exc:
-            raise RepositoryError(f"Failed to load Foo records: {exc}") from exc
-
-    def find_by_id(self, foo_id: int) -> Optional[FooDomainEntity]:
-        """Return one Foo by ID, or None."""
-        try:
-            obj = (
-                self._db_session.query(FooOrmModel)
-                .filter(FooOrmModel.foo_id == foo_id)
-                .first()
-            )
-            return self._to_domain(obj) if obj else None
-        except SQLAlchemyError as exc:
-            raise RepositoryError(f"Failed to load Foo {foo_id}: {exc}") from exc
-
-    @staticmethod
-    def _to_domain(orm_obj: FooOrmModel) -> FooDomainEntity:
-        """Convert ORM object to domain entity."""
-        return FooDomainEntity(foo_id=cast(int, orm_obj.foo_id), ...)
+/** Validates that a staff name is non-empty. */
+export function validateStaffName(name: string): void {
+  if (!name.trim()) {
+    throw new Error('Staff name must not be empty')
+  }
+}
 ```
 
-**Critical:** `FooRepository` does **not** inherit from `FooRepositoryPort`.
-Conformance is structural (same method names and signatures). The type checker
-verifies this at the call site in `container.py`.
-
-**Import constraints:**
-- May import from: `domain`, `application.ports`, `application.dtos`,
-  `application.exceptions`, `shared`, `infrastructure` (own layer)
-- Must NOT import from: `application.use_cases`, `application.services`,
-  `presentation`, `container`
+**Import rules:**
+- May import from: `src/shared/`, Node.js stdlib
+- Must NOT import from: `application`, `infrastructure`, `ipc`, `renderer`
 
 ---
 
-## Step 4 — DTO (if new)
+## Step 3 - Repository (infrastructure)
 
-**File:** `irs_data/application/dtos/<snake_case>_dto.py`
+**File:** `src/main/infrastructure/repositories/[entity]-repository.ts`
 
-```python
-"""DTO for Foo — presentation-safe representation of the domain entity."""
+```typescript
+/** Infrastructure adapter: Drizzle repository for staff. */
 
-from __future__ import annotations
+import { eq } from 'drizzle-orm'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { randomUUID } from 'crypto'
+import { staff } from '../db/schema'
+import type { StaffRepositoryPort } from '../../application/ports/staff-repository-port'
+import type { StaffDto, NewStaffInput } from '../../application/dtos/staff-dto'
 
-from dataclasses import dataclass
-from typing import Any, Dict
+/** Drizzle-backed repository implementing StaffRepositoryPort. */
+export class StaffRepository implements StaffRepositoryPort {
+  constructor(private db: BetterSQLite3Database) {}
 
-from irs_data.domain.<module> import FooDomainEntity
+  /** Return all staff records ordered by name. */
+  listAll(): StaffDto[] {
+    return this.db.select().from(staff).orderBy(staff.name).all()
+  }
 
+  /** Return a single staff record by id, or null if not found. */
+  findById(id: string): StaffDto | null {
+    const result = this.db.select().from(staff).where(eq(staff.id, id)).get()
+    return result ?? null
+  }
 
-@dataclass
-class FooDTO:
-    """Presentation-safe view of a Foo entity."""
+  /** Persist a new staff record and return it. */
+  create(input: NewStaffInput): StaffDto {
+    const now = new Date().toISOString()
+    const record = { id: randomUUID(), ...input, createdAt: now }
+    this.db.insert(staff).values(record).run()
+    return record
+  }
 
-    foo_id: int
-    name: str
-
-    @classmethod
-    def from_entity(cls, entity: FooDomainEntity) -> "FooDTO":
-        """Build a DTO from a domain entity."""
-        return cls(foo_id=entity.foo_id, name=entity.name)
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Serialise to a plain dict for CLI output or XLSX export."""
-        return {"foo_id": self.foo_id, "name": self.name}
+  /** Update an existing staff record and return the updated version. */
+  update(id: string, input: Partial<NewStaffInput>): StaffDto {
+    const now = new Date().toISOString()
+    this.db.update(staff).set({ ...input, updatedAt: now }).where(eq(staff.id, id)).run()
+    return this.findById(id)!
+  }
+}
 ```
 
-Skip this step if a suitable DTO already exists.
+**Import rules:**
+- May import from: `domain`, `application/ports`, `application/dtos`, `shared`
+- Must NOT import from: `ipc`, `renderer`, `container`
+- The class may implement a port interface but must not extend it
+  (TypeScript uses structural typing - matching method signatures is enough)
 
 ---
 
-## Step 5 — Use case
+## Step 4 - DTO
 
-**File:** `irs_data/application/use_cases/<topic>/<snake_case>_use_case.py`
-**Class name:** `FooUseCase`
+**File:** `src/main/application/dtos/[entity]-dto.ts`
 
-```python
-"""Use case for <description>."""
+DTOs are the objects that cross the application-to-presentation boundary.
+They are also what IPC sends over the wire (plain JSON-serializable objects).
 
-from __future__ import annotations
+```typescript
+/** DTO and input types for the staff entity. */
 
-import logging
-from typing import List, Optional
+/** Presentation-safe view of a staff record. */
+export interface StaffDto {
+  id: string
+  name: string
+  status: 'Active' | 'Inactive'
+  createdAt: string
+}
 
-from irs_data.application.dtos.foo_dto import FooDTO
-from irs_data.application.ports.foo_repository_port import FooRepositoryPort
-
-
-class FooUseCase:
-    """<One-sentence description of what this use case orchestrates>."""
-
-    def __init__(
-        self,
-        repository: FooRepositoryPort,
-        logger: Optional[logging.Logger] = None,
-    ) -> None:
-        """Initialise with a repository port and optional logger."""
-        self._repository = repository
-        self._logger = logger or logging.getLogger(__name__)
-
-    def execute(self) -> List[FooDTO]:
-        """<What this method does and returns>."""
-        self._logger.debug("Fetching all Foo records")
-        entities = self._repository.get_all()
-        return [FooDTO.from_entity(e) for e in entities]
+/** Fields required to create a new staff record. */
+export interface NewStaffInput {
+  name: string
+  status: 'Active' | 'Inactive'
+}
 ```
 
-**The anti-pattern guard — before writing this file, confirm:**
-
-- [ ] The `repository` parameter is typed as `FooRepositoryPort` (the Protocol).
-- [ ] There is no import of `FooRepository` (the concrete class) anywhere in this file.
-- [ ] There is no import from `irs_data.infrastructure.*` anywhere in this file.
-- [ ] There is no import from `irs_data.presentation.*` anywhere in this file.
-- [ ] Every public method has a docstring and return type annotation.
-- [ ] Every method has a McCabe complexity score of 10 or less — exceeding 10 causes
-  `./make.ps1 flake8` to fail with C901. Count before writing.
-- [ ] **Transitive domain import check (mandatory):** scan every top-level `import`
-  and `from ... import` in this file. If any resolves to a module under
-  `irs_data.domain.*`, ask: "will a `presentation` file ever import this use case?"
-  If yes, that domain import creates the forbidden path
-  `presentation → application → domain`. Replace the domain reference with a string
-  literal or numeric literal defined at module level in this file instead.
-
-  ```python
-  # WRONG — runtime domain import; CLI command reaches domain transitively
-  from irs_data.domain.filing_rules import FilingRules
-  _DEFAULT_FORM = FilingRules.FORM_990
-
-  # CORRECT — literal in the application layer; no domain import needed
-  _DEFAULT_FORM = "990"
-  ```
-
-**Import constraints:**
-- May import from: `application.ports`, `application.dtos`,
-  `application.exceptions`, `shared`
-- May import from `domain` **only** under `TYPE_CHECKING` (type annotations) —
-  **never** at runtime for constants, rule classes, or default values
-- Must NOT import from: `infrastructure`, `presentation`, `container`
+DTOs live in `application/dtos/` and can be imported by both `application`
+and `infrastructure` layers. They are also re-exported from `src/shared/`
+if the renderer needs them (via IPC types).
 
 ---
 
-## Step 6 — Wire the container
+## Step 5 - Use case
 
-**File:** `irs_data/container.py`
+**File:** `src/main/application/use-cases/[entity]/[action]-[entity]-use-case.ts`
 
-Add two factory methods. Both import their concrete classes **inside the method body**
-using a local import. The return type is a **string forward reference** to the Port or
-use case class.
+```typescript
+/** Use case: list all staff members. */
 
-```python
-def get_foo_repository(self, session: "Session") -> "FooRepositoryPort":
-    """Get Foo repository instance."""
-    from irs_data.infrastructure.persistence.foo_repository import FooRepository
-    return FooRepository(db_session=session)
+import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
+import type { StaffDto } from '../../dtos/staff-dto'
 
-def get_foo_use_case(self, session: "Session") -> "FooUseCase":
-    """Get Foo use case instance."""
-    from irs_data.application.use_cases.topic.foo_use_case import FooUseCase
-    from irs_data.infrastructure.persistence.foo_repository import FooRepository
-    return FooUseCase(
-        repository=FooRepository(db_session=session),
-        logger=self.get_logger(),
-    )
+/** Retrieves all staff members for display. */
+export class ListStaffUseCase {
+  constructor(private readonly repo: StaffRepositoryPort) {}
+
+  /** Return all staff records ordered by name. */
+  execute(): StaffDto[] {
+    return this.repo.listAll()
+  }
+}
 ```
 
-**Rules:**
-- Concrete class imports (`FooRepository`) are **inside the method body**, never at
-  the top of `container.py`.
-- Port and use case types used in return annotations are declared under
-  `TYPE_CHECKING` at the top of `container.py` as string forward references.
-- `container.py` is the **only file** in the project where a concrete infrastructure
-  class is instantiated and passed to an application-layer use case.
+**Anti-pattern checklist before writing this file:**
+
+- [ ] The `repo` parameter is typed as `StaffRepositoryPort` (the interface).
+- [ ] There is no import of `StaffRepository` (the concrete class) anywhere.
+- [ ] There is no import from `infrastructure/` anywhere.
+- [ ] There is no import from `ipc/` anywhere.
+- [ ] Every public method has a JSDoc comment and return type annotation.
+- [ ] McCabe complexity is 10 or less - count before writing.
+
+**Import rules:**
+- May import from: `application/ports`, `application/dtos`, `shared`
+- Must NOT import from: `infrastructure`, `ipc`, `renderer`, `container`
 
 ---
 
-## Step 7 — CLI command
+## Step 6 - Wire the container
 
-**File:** `irs_data/presentation/cli/commands/<snake_case>_commands.py`
+**File:** `src/main/container.ts`
 
-CLI commands use Click. They call the container for the use case, invoke
-`execute()`, and print results. They never import `container` at module level —
-the container is instantiated inside the command function.
+`container.ts` is the ONLY file in the project that instantiates concrete
+repository classes. Imports of concrete classes happen inside function bodies,
+not at the top of the file.
 
-```python
-"""CLI commands for <description>."""
+```typescript
+// In container.ts
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 
-from __future__ import annotations
-
-import click
-
-from irs_data.application.exceptions import ApplicationError
-
-
-@click.command("foo")
-@click.option("--bar", default=None, help="Filter by bar value.")
-@click.option(
-    "--output", default=".", show_default=True,
-    help="Directory to write output files.",
-)
-def foo_command(bar: str, output: str) -> None:
-    """<One-sentence description of what this command does>."""
-    from irs_data.container import Container
-
-    container = Container()
-    try:
-        with container.get_session() as session:
-            use_case = container.get_foo_use_case(session)
-            results = use_case.execute(bar=bar)
-        for dto in results:
-            click.echo(dto.to_dict())
-    except ApplicationError as exc:
-        click.echo(f"\nError: {exc}", err=True)
-        raise SystemExit(1) from exc
+/** Build a ListStaffUseCase wired to the production Drizzle repository. */
+export function makeListStaffUseCase(db: BetterSQLite3Database): ListStaffUseCase {
+  // Local import - keeps concrete class OUT of module-level imports
+  const { StaffRepository } = require('./infrastructure/repositories/staff-repository')
+  const { ListStaffUseCase } = require('./application/use-cases/staff/list-staff-use-case')
+  return new ListStaffUseCase(new StaffRepository(db))
+}
 ```
 
-**Rules:**
-- `from irs_data.container import Container` is inside the command function body,
-  not at the top of the file. This prevents `lint-imports` from tracing a
-  `presentation → container → infrastructure` path at the module level.
-- All exceptions caught at the CLI boundary. Raw tracebacks must not reach the user.
-- Use `click.echo(..., err=True)` for errors (writes to stderr).
-- Use `raise SystemExit(1)` — never `sys.exit()`.
+Or more idiomatically with static imports isolated to container.ts:
 
-### Step 7a — Register the command in main.py
+```typescript
+import { StaffRepository } from './infrastructure/repositories/staff-repository'
+import { ListStaffUseCase } from './application/use-cases/staff/list-staff-use-case'
 
-Every new CLI command must be added to the Click group in `main.py` before
-the feature is considered done.
-
-```python
-# irs_data/main.py
-from irs_data.presentation.cli.commands.foo_commands import foo_command
-
-cli.add_command(foo_command)
+export function makeListStaffUseCase(db: BetterSQLite3Database): ListStaffUseCase {
+  return new ListStaffUseCase(new StaffRepository(db))
+}
 ```
 
-Verify the command is reachable:
-
-```powershell
-cd c:\Projects\prhrt\irs-data; .venv\Scripts\python.exe -m irs_data --help
-```
-
-The new command name must appear in the help output.
+Both are acceptable. The critical constraint is that `StaffRepository` is
+imported in `container.ts` and nowhere else outside `infrastructure/`.
 
 ---
 
-## Step 8 — Write tests
+## Step 7 - IPC handler
 
-Two test files are required. Both must exist before the task is done. Coverage below
-80% causes `./make.ps1 test` to fail — this is a hard build failure.
+**File:** `src/main/ipc/handlers/[entity]-handlers.ts`
+
+IPC handlers are the Electron equivalent of Flask routes. They receive a
+message from the renderer, call a use case, and send back a DTO.
+
+```typescript
+/** IPC handlers for staff-related channels. */
+
+import { ipcMain } from 'electron'
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { makeListStaffUseCase, makeCreateStaffUseCase } from '../../container'
+import type { NewStaffInput } from '../../application/dtos/staff-dto'
+
+/** Register all staff IPC handlers against the provided database instance. */
+export function registerStaffHandlers(db: BetterSQLite3Database): void {
+  ipcMain.handle('staff:list', () => {
+    return makeListStaffUseCase(db).execute()
+  })
+
+  ipcMain.handle('staff:create', (_event, input: NewStaffInput) => {
+    return makeCreateStaffUseCase(db).execute(input)
+  })
+}
+```
+
+**Import rules:**
+- May import from: `application/ports`, `application/dtos`, `shared`, `container`
+- Must NOT import from: `infrastructure/` - never import a repository here
+- `container` is imported for its factory functions only
+
+---
+
+## Step 8 - Register handlers + expose via preload
+
+**`src/main/ipc/index.ts`** - call all register functions at startup:
+
+```typescript
+import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+import { registerStaffHandlers } from './handlers/staff-handlers'
+
+/** Register all IPC handlers. Called once from src/main/index.ts at startup. */
+export function registerAllHandlers(db: BetterSQLite3Database): void {
+  registerStaffHandlers(db)
+}
+```
+
+**`src/preload/index.ts`** - expose typed API to renderer:
+
+```typescript
+import { contextBridge, ipcRenderer } from 'electron'
+
+contextBridge.exposeInMainWorld('api', {
+  staff: {
+    list: () => ipcRenderer.invoke('staff:list'),
+    create: (input: NewStaffInput) => ipcRenderer.invoke('staff:create', input),
+  },
+})
+```
+
+---
+
+## Step 9 - Renderer API wrapper and hook
+
+**`src/renderer/api/staff-api.ts`** - typed wrapper over `window.api`:
+
+```typescript
+import type { StaffDto, NewStaffInput } from '../../shared/dtos/staff-dto'
+
+/** Typed wrappers for staff IPC calls. */
+export const staffApi = {
+  list: (): Promise<StaffDto[]> => window.api.staff.list(),
+  create: (input: NewStaffInput): Promise<StaffDto> => window.api.staff.create(input),
+}
+```
+
+**`src/renderer/hooks/use-staff.ts`** - React hook for components:
+
+```typescript
+import { useState, useEffect } from 'react'
+import { staffApi } from '../api/staff-api'
+import type { StaffDto } from '../../shared/dtos/staff-dto'
+
+/** Fetch and manage staff list state. */
+export function useStaff(): { staff: StaffDto[]; loading: boolean } {
+  const [staff, setStaff] = useState<StaffDto[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    staffApi.list().then((data) => {
+      setStaff(data)
+      setLoading(false)
+    })
+  }, [])
+
+  return { staff, loading }
+}
+```
+
+---
+
+## Step 10 - Write tests
+
+Two test files are required. Both must exist before the task is done.
+Coverage below 80% for `src/main/` fails `./make.ps1 test`.
 
 ### Use case test
 
-**File:** `tests/test_<snake_case>_use_case.py` — `Mock()` for repository, no database.
+**File:** `src/main/application/use-cases/[entity]/[action]-[entity]-use-case.test.ts`
 
-```python
-"""Tests for FooUseCase."""
-import pytest
-from unittest.mock import Mock
+```typescript
+import { describe, it, expect, vi } from 'vitest'
+import { ListStaffUseCase } from './list-staff-use-case'
+import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
 
-from irs_data.application.use_cases.topic.foo_use_case import FooUseCase
+const mockRepo: StaffRepositoryPort = {
+  listAll: vi.fn().mockReturnValue([]),
+  findById: vi.fn().mockReturnValue(null),
+  create: vi.fn(),
+  update: vi.fn(),
+}
 
-
-@pytest.fixture
-def repo() -> Mock:
-    """Repository mock."""
-    r = Mock()
-    r.get_all.return_value = []
-    return r
-
-
-@pytest.fixture
-def use_case(repo: Mock) -> FooUseCase:
-    """Use case with mocked repository."""
-    return FooUseCase(repository=repo, logger=Mock())
-
-
-class TestFooUseCaseInit:
-    """Test constructor wiring."""
-
-    @pytest.mark.unit
-    def test_stores_repository(self) -> None:
-        """Use case stores the injected repository port."""
-        r = Mock()
-        assert FooUseCase(repository=r)._repository is r
-
-
-class TestFooUseCaseExecute:
-    """Test execute behaviour."""
-
-    @pytest.mark.unit
-    def test_calls_repository(self, use_case: FooUseCase, repo: Mock) -> None:
-        """execute() delegates to the repository."""
-        use_case.execute()
-        repo.get_all.assert_called_once()
-
-    @pytest.mark.unit
-    def test_returns_dtos(self, use_case: FooUseCase, repo: Mock) -> None:
-        """execute() returns a list."""
-        result = use_case.execute()
-        assert isinstance(result, list)
+describe('ListStaffUseCase', () => {
+  it('calls repo.listAll and returns the result', () => {
+    const useCase = new ListStaffUseCase(mockRepo)
+    const result = useCase.execute()
+    expect(mockRepo.listAll).toHaveBeenCalledOnce()
+    expect(result).toEqual([])
+  })
+})
 ```
 
-**What to test:** constructor wiring, `execute()` calls the right repository method(s),
-filters/parameters forwarded correctly, DTOs returned (not entities), edge cases
-(empty results, `None`, invalid parameter values).
+### IPC handler test
 
-### CLI command test
+**File:** `src/main/ipc/handlers/[entity]-handlers.test.ts`
 
-**File:** `tests/test_<snake_case>_commands.py` — uses `click.testing.CliRunner`.
+```typescript
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+// Mock ipcMain before importing the handlers
+vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
+import { ipcMain } from 'electron'
+import { registerStaffHandlers } from './staff-handlers'
 
-```python
-"""Tests for foo CLI commands."""
-import pytest
-from unittest.mock import MagicMock, patch
+const mockDb = {} as never
 
-from click.testing import CliRunner
+describe('registerStaffHandlers', () => {
+  beforeEach(() => { vi.clearAllMocks() })
 
-from irs_data.presentation.cli.commands.foo_commands import foo_command
-
-
-class TestFooCommand:
-    """Test the foo CLI command."""
-
-    @pytest.mark.unit
-    def test_exits_zero_on_success(self) -> None:
-        """Command exits with code 0 when use case succeeds."""
-        mock_use_case = MagicMock()
-        mock_use_case.execute.return_value = []
-
-        with patch("irs_data.presentation.cli.commands.foo_commands.Container") as mock_container:
-            mock_container.return_value.get_foo_use_case.return_value = mock_use_case
-            mock_container.return_value.get_session.return_value.__enter__ = MagicMock(return_value=MagicMock())
-            mock_container.return_value.get_session.return_value.__exit__ = MagicMock(return_value=False)
-
-            runner = CliRunner()
-            result = runner.invoke(foo_command, [])
-
-        assert result.exit_code == 0
-
-    @pytest.mark.unit
-    def test_calls_use_case(self) -> None:
-        """Command delegates to the use case execute method."""
-        mock_use_case = MagicMock()
-        mock_use_case.execute.return_value = []
-
-        with patch("irs_data.presentation.cli.commands.foo_commands.Container") as mock_container:
-            mock_container.return_value.get_foo_use_case.return_value = mock_use_case
-            mock_container.return_value.get_session.return_value.__enter__ = MagicMock(return_value=MagicMock())
-            mock_container.return_value.get_session.return_value.__exit__ = MagicMock(return_value=False)
-
-            runner = CliRunner()
-            runner.invoke(foo_command, [])
-
-        mock_use_case.execute.assert_called_once()
+  it('registers staff:list handler', () => {
+    registerStaffHandlers(mockDb)
+    expect(ipcMain.handle).toHaveBeenCalledWith('staff:list', expect.any(Function))
+  })
+})
 ```
 
-**What to test:** zero exit code for happy path, non-zero exit code on
-`ApplicationError`, use case is called, CLI options forwarded as expected.
-
-### Run targeted tests, then the full suite
+### Run targeted tests, then full suite
 
 ```powershell
-cd c:\Projects\prhrt\irs-data; .venv\Scripts\pytest.exe tests/test_foo_use_case.py tests/test_foo_commands.py -v
+cd c:\Projects\prhrt\politicket; npx vitest run src/main/application/use-cases/staff/ -v
 ./make.ps1 test
 ```
 
-Targeted tests must pass before running the full suite. Coverage below 80% is a hard
-build failure — add more tests before declaring the task done.
-
 ---
 
-## Lint-imports self-check before running lint
+## Arch-check self-check before running lint
 
-After writing all files, verify each file's imports against this table:
+After writing all files, verify each file's imports:
 
-| File | Allowed imports | Forbidden |
-|---|---|---|
-| `application/ports/foo_repository_port.py` | `domain`, `typing` | `infrastructure`, `presentation`, `container` |
-| `application/use_cases/.../foo_use_case.py` | `application.ports`, `application.dtos`, `application.exceptions`, `shared`; `domain` **only under `TYPE_CHECKING`** | `infrastructure`, `presentation`, `container`; `domain` **at runtime** |
-| `infrastructure/persistence/foo_repository.py` | `domain`, `application.ports`, `application.dtos`, `application.exceptions`, `shared`, own `infrastructure` | `application.use_cases`, `application.services`, `presentation`, `container` |
-| `container.py` factory methods | local imports of concrete classes | top-level infrastructure imports |
-| `presentation/cli/commands/foo_commands.py` | `application`, `click`; `container` **inside function body only** | top-level `container` import; `infrastructure`, `domain` directly |
-
-**Transitive path check — run this mental trace before declaring lint done:**
-
-For every use case file you wrote, trace: does any `presentation` file import
-this use case? If yes, open the use case file and verify zero top-level imports
-from `irs_data.domain.*`. If you find one, the tool will report:
-
-```
-presentation/cli/foo_commands.py → application/use_cases/foo_use_case.py → domain/filing_rules.py
-```
-
-Fix: move the domain reference to a string/numeric literal in the use case, or
-move it under `TYPE_CHECKING`.
-
-Also verify complexity across all new files:
-
-- Every function and method must have a McCabe complexity score of 10 or less.
-  Exceeding 10 causes the linter to fail with C901 — it is a hard build failure,
-  not a warning.
-- `ReadLints` does **not** detect C901 — only `./make.ps1 flake8` does.
-- Count branches before submitting. If any method is over 10, extract helpers at module
-  level and recount before running lint.
+- `application/ports/` - imports only from `application/dtos/` and `shared/`
+- `application/use-cases/` - imports only from `application/ports/`, `application/dtos/`, `shared/`
+- `infrastructure/repositories/` - imports from `domain/`, `application/ports/`, `application/dtos/`, `shared/`, npm
+- `ipc/handlers/` - imports from `application/`, `shared/`, `container.ts`, npm (electron)
+- `container.ts` - may import from all layers
 
 Then run:
 
@@ -678,12 +468,14 @@ Then run:
 ./make.ps1 lint
 ```
 
+The arch-check step (`tsc --build src/main/tsconfig.json`) will catch any
+layer violation as a compile error. Fix before declaring the task done.
+
 ---
 
 ## See also
 
-- Branching and commit rules: `git-branching.mdc` and the `git-commit` skill
-- Layer rules and import table: `clean-architecture-imports.mdc`
-- DTO boundary enforcement: `dto-boundary.mdc`
-- Progress indicators for long-running CLI commands: `progress-indicators` skill
-- XLSX export patterns: `excel-export` skill
+- ADR-0001: `docs/adr/0001-hexagonal-architecture-enforcement.md`
+- `clean-architecture-imports.mdc` - the layer rules
+- `lint-imports-setup` skill - how the enforcement is configured
+- `pre-feature-planning` skill - run before starting any feature
