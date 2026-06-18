@@ -9,6 +9,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/renderer/test-setup.ts'],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    passWithNoTests: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

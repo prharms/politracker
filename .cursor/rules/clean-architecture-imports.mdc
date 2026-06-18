@@ -1,140 +1,150 @@
+---
+description: Hexagonal architecture import rules for the TypeScript/Electron stack. Enforced at compile time by TypeScript project references and at lint time by eslint-plugin-boundaries. ZERO DISCRETION - violations fail the build.
+globs:
+alwaysApply: true
+---
+
 # Hexagonal Architecture - Import Rules (TypeScript/Electron)
 
 ## ZERO DISCRETION POLICY
 
-These rules have no exceptions. There is no scenario - not convenience,
-not a "temporary" workaround, not avoiding a circular import - that
-permits violating the layer import rules.
+These rules have no exceptions. Violations cause `tsc --build` to fail - the
+application cannot be built when a layer contract is violated.
 
 Prohibited judgement calls:
-- "I'll import the Drizzle repository directly in the use case just this once." - No. Use a port interface and inject the repository.
-- "It's easier to import from `src/main/` in the renderer component." - No. Renderer communicates via IPC only.
-- "The renderer needs this type - I'll import it from `src/main/domain/`." - No. Shared types live in `src/shared/`. Move the type there.
-- "I'll import `ipcRenderer` directly in a React component." - No. Use `window.api.*` via the preload bridge.
-- "The IPC handler doesn't need to go through a use case - I'll query the DB directly." - No. IPC handlers call use cases only.
-
----
-
-## Process boundary (most important rule)
-
-Electron runs two separate Node.js processes. They cannot share memory.
-
-**Main process** (`src/main/`) runs in Node.js. Has full filesystem and
-database access.
-
-**Renderer process** (`src/renderer/`) runs in Chromium. Has no direct
-Node.js access. `nodeIntegration` is `false`.
-
-**The only communication path between them is IPC**, via the typed
-`window.api.*` interface exposed by the preload context bridge.
-
-A renderer component that imports anything from `src/main/` will either
-fail at runtime (Node.js APIs unavailable) or create a security hole.
-ESLint import rules enforce this boundary statically.
+- "I'll import the repository directly in the use case just this once." - No. The use case receives the port interface via constructor injection.
+- "It's easier to call the repository from the IPC handler." - No. IPC handlers call use cases only.
+- "I need to avoid a circular import, so I'll break the layer rule." - No. Resolve the circular import by refactoring.
+- "The domain entity is simple enough to pass directly to the IPC response." - No. Always convert to a DTO first.
+- "I'll put this import in container.ts to avoid the rule." - No. container.ts is the composition root, not a workaround. It wires once at startup.
 
 ---
 
 ## Layer map
 
 ```
-Main process:
-  src/main/domain/           <- Entities, value objects, domain rules
-  src/main/application/      <- Use cases, port interfaces, DTOs, exceptions
-  src/main/infrastructure/   <- Drizzle repositories (implements ports)
-  src/main/ipc/              <- IPC handlers (calls use cases via container)
-  src/main/container.ts      <- Composition root (wires infra to ports)
-
-Renderer process:
-  src/renderer/components/   <- Reusable React components
-  src/renderer/pages/        <- Route-level page components
-  src/renderer/hooks/        <- Custom React hooks
-  src/renderer/api/          <- Typed IPC client wrappers (window.api.*)
-
-Preload:
-  src/preload/index.ts       <- contextBridge only - no logic
-
-Shared (importable from anywhere):
-  src/shared/dtos/           <- DTO interfaces
-  src/shared/ipc-types.ts    <- Typed IPC channel contracts
-  src/shared/constants.ts    <- Domain constants (categories, statuses, etc.)
+src/
+  main/                  <- Electron main process (Node.js)
+    domain/              <- Entities, value objects, domain errors
+    application/         <- Port interfaces, use cases, DTOs, exceptions
+    infrastructure/      <- Drizzle repositories implementing ports
+    ipc/                 <- IPC handlers (presentation layer for main)
+    container.ts         <- Composition root - ONLY file that imports all layers
+    index.ts             <- Electron entry point
+  renderer/              <- React UI (Chromium process)
+  preload/               <- Context bridge only
+  shared/                <- Types and utilities used by both processes
 ```
 
----
+## Allowed imports per layer
 
-## Import rules
-
-**Renderer** (`src/renderer/`) may import from:
-- `src/renderer/` (other renderer files)
-- `src/shared/` (shared types and constants)
-- External npm packages
-
-**Renderer** may NOT import from:
-- `src/main/` (any file)
-- `src/preload/`
-
-**Main - domain** (`src/main/domain/`) may import from:
+**`domain/`** may import from:
 - `src/shared/`
-- External npm packages with no Node.js-specific APIs
+- Node.js standard library and npm packages
+- Other modules within `domain/`
 
-**Main - domain** may NOT import from:
-- `src/main/application/`
-- `src/main/infrastructure/`
-- `src/main/ipc/`
-
-**Main - application** (`src/main/application/`) may import from:
-- `src/main/domain/`
+**`application/`** may import from:
+- `domain/`
 - `src/shared/`
+- npm packages
 
-**Main - application** may NOT import from:
-- `src/main/infrastructure/`
-- `src/main/ipc/`
-- `src/renderer/`
-
-**Main - infrastructure** (`src/main/infrastructure/`) may import from:
-- `src/main/domain/`
-- `src/main/application/` (ports and DTOs only)
+**`infrastructure/`** may import from:
+- `domain/`
+- `application/` (port interfaces and DTOs only - never use cases)
 - `src/shared/`
+- npm packages (drizzle-orm, better-sqlite3)
 
-**Main - ipc** (`src/main/ipc/`) may import from:
-- `src/main/application/` (use cases via container)
+**`ipc/`** may import from:
+- `application/` (use cases, DTOs, port interfaces)
 - `src/shared/`
+- npm packages (electron)
+- **NEVER** `infrastructure/` - IPC handlers never import repositories directly
 
-**Main - ipc** may NOT import from:
-- `src/main/infrastructure/` (directly)
-- `src/main/domain/` (directly - use DTOs)
-- `src/renderer/`
+**`container.ts`** may import from:
+- All layers (it is the only composition root)
 
----
+**`src/renderer/`** may import from:
+- `src/shared/`
+- npm packages (react, etc.)
+- **NEVER** `src/main/` - enforced by Electron process boundary and ESLint
 
-## Ports and adapters
+**`src/preload/`** may import from:
+- `src/shared/`
+- npm packages (electron)
 
-- **Ports** live in `src/main/application/ports/` as TypeScript `interface`
-  definitions.
-- **Adapters** (implementations) live in `src/main/infrastructure/repositories/`.
-- Use cases receive port interfaces via constructor injection, never
-  concrete repository classes.
-- `src/main/container.ts` is the only place concrete repositories are
-  instantiated and injected into use cases.
+## Enforcement - two mechanisms working together
 
----
+### 1. TypeScript project references (compile-time, primary)
 
-## IPC as the presentation layer
+Each layer directory has a `tsconfig.json` with `composite: true` and a
+`references` array listing only allowed layers:
 
-IPC handlers in `src/main/ipc/` are the equivalent of Flask routes or CLI
-commands. They:
-1. Receive typed parameters from the renderer via IPC.
-2. Call a use case via the container.
-3. Return a plain DTO (no domain entity, no class instance) to the renderer.
-4. Catch errors, log them, and return a typed error response - never let
-   an unhandled exception crash the main process.
+```
+src/main/domain/tsconfig.json        references: []
+src/main/application/tsconfig.json   references: [domain]
+src/main/infrastructure/tsconfig.json references: [domain, application]
+src/main/ipc/tsconfig.json           references: [application]
+src/main/tsconfig.json               references: [domain, application, infrastructure, ipc]
+```
 
-The renderer never knows whether data came from SQLite, a cache, or
-anywhere else. It only sees the DTO.
+Run with: `npm run arch-check` or as part of `./make.ps1 lint`
 
----
+A violation is a **compile error**. The build produces no output. There is
+no escape hatch.
 
-## Enforced by ESLint
+**Transitive protection:** if `application/tsconfig.json` does not reference
+`infrastructure`, no file inside `application/` can import from `infrastructure/`
+at all. The transitive path `ipc -> application -> infrastructure` is blocked
+at its source (the application file), not just flagged.
 
-The import rules above are enforced by ESLint with `eslint-plugin-import`
-and path alias restrictions in `tsconfig.json`. A renderer import of a main
-process file is a lint error.
+### 2. eslint-plugin-boundaries (lint-time, secondary)
+
+Configured in `eslint.config.mjs`. Provides fast IDE feedback before a full
+`tsc --build` run. Catches the same violations as project references but
+surfaces them as ESLint errors during editing.
+
+The `boundaries/dependencies` rule enforces the same layer map as the
+TypeScript references. Both must agree.
+
+## Ports and Adapters pattern
+
+- **Ports** live in `application/ports/` as TypeScript `interface` types.
+- **Adapters** (primary) in `ipc/handlers/` call use cases - never repositories.
+- **Adapters** (secondary) in `infrastructure/repositories/` implement ports.
+- The **container** (`container.ts`) is the only place where adapters are
+  wired to ports.
+
+## Concrete implementations
+
+Use cases receive port interfaces (`StaffRepositoryPort`), never concrete
+classes (`StaffRepository`). This applies everywhere:
+
+- A use case constructor parameter is typed as the port interface.
+- An IPC handler calls `container.getStaffUseCase()` - never instantiates a
+  repository directly.
+- `container.ts` is the only file that imports concrete repository classes,
+  inside factory method bodies (not at the top of the file).
+
+## DTO boundary
+
+Domain entities must never be returned from use cases or passed to IPC
+response handlers directly. Use cases return DTOs. IPC handlers send DTOs
+as plain objects over the IPC channel.
+
+## New layer directory checklist
+
+When adding a new subdirectory inside a layer (e.g. `application/ports/`):
+- No new `tsconfig.json` is needed - the layer tsconfig covers all files via `**/*.ts`.
+- The boundaries rule covers subdirectories automatically via the `src/main/[layer]/**` glob.
+
+When adding an entirely new top-level layer (extremely rare):
+- Create a `tsconfig.json` with `composite: true` and the correct `references`.
+- Add it to `src/main/tsconfig.json` references.
+- Add an element entry in `eslint.config.mjs` boundaries settings.
+- Write an ADR.
+
+## See also
+
+- ADR-0001: documents the decision and options considered.
+- `hexagonal-feature` skill: step-by-step implementation guide.
+- `lint-imports-setup` skill: how the enforcement is configured.

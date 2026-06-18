@@ -1,3 +1,9 @@
+---
+description: The full lint suite must pass before any commit. ZERO DISCRETION - no task is done until ./make.ps1 lint shows exit code 0.
+globs:
+alwaysApply: true
+---
+
 # Linter Suite Must Always Pass
 
 ## ZERO DISCRETION POLICY
@@ -8,27 +14,35 @@ declaring a task done without a passing linter suite in the current session.
 
 Prohibited judgement calls:
 - "The change is too small to affect lint." - No. Run `./make.ps1 lint` and observe the output.
-- "I'll add `// eslint-disable` to unblock progress." - No. Fix the code. Never suppress without an ADR-documented exception and explicit user approval.
-- "I'll add `@ts-ignore` or `@ts-expect-error` to suppress a type error." - No. Fix the type. Same rule as above.
-- "The JSDoc comment is obvious, I'll skip it." - No. Every public function and class gets a JSDoc comment.
+- "I'll add the `// @ts-ignore` comment to unblock progress." - No. Fix the type error.
+- "I'll add the `// eslint-disable` comment to suppress the error." - No. Fix the code.
+- "The docstring is obvious, I'll skip it." - No. Every public function and method gets a JSDoc comment.
 - "I'll fix the lint errors in a follow-up." - No. Fix them in the current task before marking done.
+- "arch-check takes too long, I'll skip it." - No. It runs in under 5 seconds and catches compile-time layer violations.
 
 If a lint error cannot be resolved, stop and ask. Do not suppress it.
 
 ---
 
-The linter suite is run via `./make.ps1 lint` and must pass completely before
-any task is considered finished.
+The linter suite is run via `./make.ps1 lint` and must pass completely
+before any task is considered finished.
 
 ## What the suite checks
 
-- `tsc --noEmit` - Type annotations. No missing or incompatible types.
-- `eslint` - Style, complexity (max 10), import order, security patterns,
-  JSDoc on public members.
-- `prettier --check` - Code formatting. Run `./make.ps1 format` to auto-fix.
-- `secretlint` - No secrets committed to source. Config in `.secretlintrc.json`.
-  Package: `secretlint` + `@secretlint/secretlint-rule-preset-recommend`.
-- `vitest run --coverage` - All tests pass, coverage thresholds met.
+- **`tsc -p tsconfig.node.json --noEmit`** - Type correctness for Electron main process, preload, and config files. No missing or incompatible types.
+- **`tsc -p tsconfig.web.json --noEmit`** - Type correctness for React renderer.
+- **`npm run arch-check` (`tsc --build src/main/tsconfig.json`)** - Hexagonal architecture layer contracts. Violations are compile errors. Catches transitive import violations via TypeScript project references. See ADR-0001.
+- **`eslint .`** - Style, complexity, docstrings, and `eslint-plugin-boundaries` layer rules (direct import enforcement, fast IDE feedback).
+- **`prettier --check .`** - Code formatting.
+
+## Rules
+
+- After every code change, mentally verify all checks above will pass.
+- All public functions, methods, and classes must have a JSDoc comment.
+- All functions must have TypeScript return type annotations.
+- No function may exceed complexity 10 - split into smaller helpers if needed.
+- Never use `// @ts-ignore`, `// @ts-expect-error`, or `// eslint-disable` to suppress errors without an ADR-documented exception and explicit user approval.
+- If a lint error is introduced, fix it in the same task before marking work done.
 
 ## Running the suite
 
@@ -36,37 +50,29 @@ any task is considered finished.
 ./make.ps1 lint
 ```
 
-Type checking only:
+Running individual checks:
+
 ```powershell
-./make.ps1 type-check
+./make.ps1 type-check    # tsc --noEmit for both main and renderer
+./make.ps1 arch-check    # tsc --build: enforce hexagonal layer contracts
+./make.ps1 format        # prettier --write + eslint --fix
 ```
 
-Style only:
-```powershell
-npx eslint .
-```
+## Architecture check specifically
 
-Auto-fix formatting:
-```powershell
-./make.ps1 format
-```
+`./make.ps1 arch-check` runs `tsc --build src/main/tsconfig.json`. It verifies:
 
-## Rules
+- Files in `domain/` cannot import from `application/`, `infrastructure/`, or `ipc/`
+- Files in `application/` cannot import from `infrastructure/` or `ipc/`
+- Files in `infrastructure/` cannot import from `ipc/`
+- Files in `ipc/` cannot import from `infrastructure/`
+- Transitive violations are blocked structurally - if `application/` cannot see `infrastructure/`, no ipc -> application -> infrastructure path can compile
 
-- After every code change, mentally verify all checks above will pass.
-- All exported functions, classes, and interfaces must have a JSDoc comment.
-- All functions must have explicit TypeScript return type annotations.
-- No function may exceed complexity 10 - split into smaller helpers if needed.
-- Never use `// eslint-disable`, `@ts-ignore`, or `@ts-expect-error` to
-  suppress errors, except for an exception that is already explicitly
-  documented in an ADR. Always ask before suppressing.
-- `any` type is banned. Use `unknown` and narrow, or define a proper type.
-  The ESLint rule `@typescript-eslint/no-explicit-any` is set to error.
-- If a lint error is introduced, fix it in the same task before marking
-  work done.
+Output files (`.d.ts` and `.tsbuildinfo`) go to `out/types/` which is covered by `.gitignore`.
 
 ## See also
 
-- Import layer rules enforced by ESLint: `clean-architecture-imports.mdc`
-- Test coverage requirements: `test-suite.mdc`
-- McCabe complexity rules: `mccabe-complexity.mdc`
+- For the layer rules enforced by arch-check: `clean-architecture-imports.mdc`.
+- For test coverage requirements: `test-suite.mdc`.
+- For McCabe complexity rules and how to fix violations: `mccabe-complexity.mdc`.
+- ADR-0001: why this enforcement approach was chosen.

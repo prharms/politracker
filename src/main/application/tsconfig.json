@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declarationDir": "../../../out/types/application",
+    "outDir": "../../../out/types/application"
+  },
+  "references": [{ "path": "../domain" }],
+  "include": ["**/*.ts"]
+}
