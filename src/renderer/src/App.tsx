@@ -1,5 +1,6 @@
 import React from 'react'
 import styles from './App.module.css'
+import { TaskListPage } from './pages/TaskListPage'
 
 /** Root application component. */
 export default function App(): React.JSX.Element {
@@ -10,7 +11,7 @@ export default function App(): React.JSX.Element {
         <span className={styles.subtitle}>OPPOSITION RESEARCH PRODUCTION SYSTEM v0.1</span>
       </header>
       <main className={styles.main}>
-        <p className={styles.ready}>SYSTEM READY_</p>
+        <TaskListPage />
       </main>
     </div>
   )

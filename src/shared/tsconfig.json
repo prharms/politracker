@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "declarationDir": "../../out/types/shared",
+    "outDir": "../../out/types/shared"
+  },
+  "include": ["**/*.ts"]
+}

@@ -8,6 +8,6 @@
     "declarationDir": "../../../out/types/domain",
     "outDir": "../../../out/types/domain"
   },
-  "references": [],
+  "references": [{ "path": "../../shared" }],
   "include": ["**/*.ts"]
 }

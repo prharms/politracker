@@ -1,0 +1,44 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.tableContainer {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.tableContainer::-webkit-scrollbar {
+  width: 5px;
+}
+
+.tableContainer::-webkit-scrollbar-track {
+  background: #000000;
+}
+
+.tableContainer::-webkit-scrollbar-thumb {
+  background: #333333;
+}
+
+.empty {
+  padding: 24px 12px;
+  color: #444444;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.loading {
+  padding: 24px 12px;
+  color: #444444;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}

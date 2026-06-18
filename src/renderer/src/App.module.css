@@ -3,36 +3,44 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  padding: 16px;
-  gap: 16px;
+  -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .header {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  border-bottom: 1px solid var(--green-border);
-  padding-bottom: 12px;
+  align-items: baseline;
+  gap: 16px;
+  padding: 8px 12px 6px;
+  border-bottom: 1px solid #333333;
   -webkit-app-region: drag;
+  -webkit-user-select: none;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .title {
-  font-size: 32px;
-  color: var(--orange);
-  text-shadow: var(--glow-orange);
-  letter-spacing: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #00aa55;
+  letter-spacing: 2px;
+  text-transform: uppercase;
 }
 
 .subtitle {
-  font-size: 14px;
-  color: var(--green-dim);
-  text-shadow: none;
-  letter-spacing: 2px;
+  font-size: 11px;
+  color: #444444;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .main {
   flex: 1;
   overflow-y: auto;
+  -webkit-app-region: no-drag;
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 .ready {

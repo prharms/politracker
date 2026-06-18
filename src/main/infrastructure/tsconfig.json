@@ -8,6 +8,6 @@
     "declarationDir": "../../../out/types/infrastructure",
     "outDir": "../../../out/types/infrastructure"
   },
-  "references": [{ "path": "../domain" }, { "path": "../application" }],
+  "references": [{ "path": "../domain" }, { "path": "../application" }, { "path": "../../shared" }],
   "include": ["**/*.ts"]
 }

@@ -9,10 +9,11 @@
     "outDir": "../../out/types/main"
   },
   "references": [
+    { "path": "../shared" },
     { "path": "domain" },
     { "path": "application" },
     { "path": "infrastructure" },
     { "path": "ipc" }
   ],
-  "include": ["index.ts"]
+  "include": ["index.ts", "container.ts"]
 }

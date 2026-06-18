@@ -1,5 +1,8 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
+import { openDatabase } from './infrastructure/db/database'
+import { makeListStaffUseCase, makeListProjectsUseCase, makeListTasksUseCase } from './container'
+import { registerAllHandlers } from './ipc/index'
 
 /** Create the main application window. */
 function createWindow(): void {
@@ -28,6 +31,12 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  const db = openDatabase()
+  registerAllHandlers(
+    makeListStaffUseCase(db),
+    makeListProjectsUseCase(db),
+    makeListTasksUseCase(db)
+  )
   Menu.setApplicationMenu(null)
   createWindow()
 

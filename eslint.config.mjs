@@ -28,8 +28,12 @@ export default [
       jsdoc: jsdocPlugin
     },
     rules: {
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+      ],
       complexity: ['error', 10],
       'no-console': 'error',
       'jsdoc/require-jsdoc': [
@@ -148,6 +152,6 @@ export default [
 
   // --- Ignored paths ---
   {
-    ignores: ['out/**', 'dist/**', 'node_modules/**', '*.config.*']
+    ignores: ['out/**', 'dist/**', 'node_modules/**', '*.config.*', '**/*.d.ts']
   }
 ]
