@@ -12,8 +12,8 @@
   --bg-hover: #111111;
   --bg-selected: #1a1400;
   --text: #e8e8e8;
-  --text-dim: #888888;
-  --text-muted: #444444;
+  --text-dim: #e8e8e8;
+  --text-muted: #e8e8e8;
   --accent: #00aa55;
   --accent-dim: #006633;
   --white: #ffffff;
@@ -22,8 +22,8 @@
   --border: #1e1e1e;
   --border-bright: #333333;
   --font: 'Courier New', 'Courier', monospace;
-  --font-size: 13px;
-  --font-size-sm: 12px;
+  --font-size: 26px;
+  --font-size-sm: 24px;
 }
 
 html,

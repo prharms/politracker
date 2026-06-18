@@ -1,11 +1,11 @@
 .row {
   display: grid;
-  grid-template-columns: 1fr 120px 90px 80px 90px 110px 120px 80px;
+  grid-template-columns: 1fr 16ch 16ch 10ch 13ch 14ch 10ch 9ch;
   align-items: center;
   padding: 2px 12px;
   border-bottom: 1px solid #0d0d0d;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 26px;
   color: #e8e8e8;
   cursor: default;
   gap: 8px;
@@ -20,7 +20,7 @@
 }
 
 .row.closed {
-  color: #444444;
+  color: #e8e8e8;
 }
 
 .title {
@@ -33,7 +33,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #888888;
+  color: #e8e8e8;
 }
 
 .category {
@@ -41,18 +41,18 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 12px;
+  font-size: 24px;
 }
 
 .type {
-  color: #888888;
+  color: #e8e8e8;
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 24px;
 }
 
 .status {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 24px;
   text-transform: uppercase;
 }
 
@@ -60,14 +60,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #888888;
+  color: #e8e8e8;
 }
 
 .age {
-  color: #888888;
+  color: #e8e8e8;
   white-space: nowrap;
   text-align: right;
-  font-size: 12px;
+  font-size: 24px;
 }
 
 .age.stale {
@@ -76,17 +76,17 @@
 
 .priority {
   white-space: nowrap;
-  font-size: 12px;
+  font-size: 24px;
 }
 
 .header {
   display: grid;
-  grid-template-columns: 1fr 120px 90px 80px 90px 110px 120px 80px;
+  grid-template-columns: 1fr 16ch 16ch 10ch 13ch 14ch 10ch 9ch;
   align-items: center;
   padding: 3px 12px;
   border-bottom: 1px solid #333333;
   font-family: 'Courier New', monospace;
-  font-size: 11px;
+  font-size: 22px;
   color: #00aa55;
   gap: 8px;
   background: #000000;

@@ -1,6 +1,12 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
 import { openDatabase } from './infrastructure/db/database'
+
+// Store the database in Local AppData, not Roaming.
+// Roaming is synced across machines on domain networks, which can corrupt a live SQLite file.
+if (process.env['LOCALAPPDATA']) {
+  app.setPath('userData', path.join(process.env['LOCALAPPDATA'], 'Politicket'))
+}
 import { makeListStaffUseCase, makeListProjectsUseCase, makeListTasksUseCase } from './container'
 import { registerAllHandlers } from './ipc/index'
 
@@ -9,11 +15,11 @@ function createWindow(): void {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
-    backgroundColor: '#0a0f0a',
+    backgroundColor: '#000000',
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: '#0a0f0a',
-      symbolColor: '#33ff33',
+      color: '#000000',
+      symbolColor: '#e8e8e8',
       height: 32
     },
     webPreferences: {

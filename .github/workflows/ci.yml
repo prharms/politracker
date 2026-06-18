@@ -27,5 +27,5 @@ jobs:
       - name: Lint (tsc + arch-check + eslint + prettier)
         run: npm run lint
 
-      - name: Test
-        run: npm run test:fast
+      - name: Test (with coverage)
+        run: npm run test

@@ -21,16 +21,16 @@
 }
 
 .title {
-  font-size: 14px;
+  font-size: 32px;
   font-weight: bold;
-  color: #00aa55;
-  letter-spacing: 2px;
+  color: #ff6600;
+  letter-spacing: 3px;
   text-transform: uppercase;
 }
 
 .subtitle {
-  font-size: 11px;
-  color: #444444;
+  font-size: 22px;
+  color: #e8e8e8;
   letter-spacing: 1px;
   text-transform: uppercase;
 }
