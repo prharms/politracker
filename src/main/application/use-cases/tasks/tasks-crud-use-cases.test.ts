@@ -12,8 +12,8 @@ const stub = {
   priority: 'Normal' as const,
   projectId: 'p1',
   projectName: 'CA Gov 2026',
-  subprojectId: null,
-  subprojectName: null,
+  subprojectId: 'sp1',
+  subprojectName: 'None',
   staffId: null,
   staffName: null,
   dueDate: null,
@@ -38,6 +38,7 @@ describe('CreateTaskUseCase', () => {
     const repo = mockRepo()
     const result = new CreateTaskUseCase(repo).execute({
       projectId: 'p1',
+      subprojectId: 'sp1',
       title: 'Research finances',
       scope: 'Full Memo',
       status: 'Backlog',
@@ -51,6 +52,7 @@ describe('CreateTaskUseCase', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
         projectId: 'p1',
+        subprojectId: 'sp1',
         title: '  ',
         scope: 'Full Memo',
         status: 'Backlog',
@@ -63,12 +65,26 @@ describe('CreateTaskUseCase', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
         projectId: '  ',
+        subprojectId: 'sp1',
         title: 'X',
         scope: 'Full Memo',
         status: 'Backlog',
         priority: 'Normal'
       })
     ).toThrow('Project id must not be empty')
+  })
+
+  it('throws when subprojectId is empty', () => {
+    expect(() =>
+      new CreateTaskUseCase(mockRepo()).execute({
+        projectId: 'p1',
+        subprojectId: '  ',
+        title: 'X',
+        scope: 'Full Memo',
+        status: 'Backlog',
+        priority: 'Normal'
+      })
+    ).toThrow('Subproject id must not be empty')
   })
 })
 

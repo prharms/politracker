@@ -121,7 +121,7 @@ export function makeListProjectsUseCase(db: BetterSQLite3Database): ListProjects
 }
 /** Build a CreateProjectUseCase wired to the Drizzle repository. */
 export function makeCreateProjectUseCase(db: BetterSQLite3Database): CreateProjectUseCase {
-  return new CreateProjectUseCase(projectsRepo(db))
+  return new CreateProjectUseCase(projectsRepo(db), subprojectsRepo(db))
 }
 /** Build an UpdateProjectUseCase wired to the Drizzle repository. */
 export function makeUpdateProjectUseCase(db: BetterSQLite3Database): UpdateProjectUseCase {

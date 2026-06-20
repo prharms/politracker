@@ -2,12 +2,13 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { TaskRepository } from './task-repository'
 import { createTestDatabase } from '../db/test-database'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { clients, projects, staff } from '../db/schema'
+import { clients, projects, subprojects, staff } from '../db/schema'
 
 let db: BetterSQLite3Database
 let repo: TaskRepository
 const CLIENT_ID = 'client-1'
 const PROJECT_ID = 'proj-1'
+const SUBPROJECT_ID = 'sp-1'
 const STAFF_ID = 'staff-1'
 
 beforeEach(() => {
@@ -26,6 +27,9 @@ beforeEach(() => {
       updatedAt: now
     })
     .run()
+  db.insert(subprojects)
+    .values({ id: SUBPROJECT_ID, projectId: PROJECT_ID, name: 'None', createdAt: now })
+    .run()
   db.insert(staff)
     .values({ id: STAFF_ID, name: 'Alice', initials: 'A', status: 'Active', createdAt: now })
     .run()
@@ -34,6 +38,7 @@ beforeEach(() => {
 
 const newTask = () => ({
   projectId: PROJECT_ID,
+  subprojectId: SUBPROJECT_ID,
   staffId: STAFF_ID,
   title: 'Check campaign finance',
   scope: 'Full Memo' as const,

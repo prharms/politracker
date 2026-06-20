@@ -2,11 +2,19 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './CrudPage.module.css'
 import { useTasks } from '../../hooks/use-tasks'
 import { useFilterOptions } from '../../hooks/use-filter-options'
+import { useSubprojects } from '../../hooks/use-subprojects'
 import type { TaskDto, TaskListFilters } from '../../../shared/dtos/task-dto'
 import { TASK_SCOPES, TASK_PRIORITIES, TASK_STATUSES } from '../../../shared/constants'
 import type { TaskScope, TaskPriority } from '../../../shared/constants'
 
 const COLS = '1fr 14ch 14ch 12ch 8ch 8ch 6ch'
+
+/** Renders loading indicator or empty-state message for the task table. */
+function TaskTableStatus({ loading, count }: { loading: boolean; count: number }) {
+  if (loading) return <div className={styles.loading}>LOADING...</div>
+  if (count === 0) return <div className={styles.empty}>NO TASKS - PRESS [A] TO ADD</div>
+  return null
+}
 
 /** Format elapsed time since a given ISO timestamp. */
 function formatAge(isoString: string): string {
@@ -71,13 +79,16 @@ function TaskItem({ task, selected, onSelect }: TaskItemProps) {
 
 interface AddTaskFormProps {
   projectOptions: { id: string; name: string }[]
+  subprojectOptions: { id: string; name: string }[]
   staffOptions: { id: string; name: string }[]
   addProjectId: string
+  addSubprojectId: string
   addStaffId: string
   addTitle: string
   addScope: TaskScope
   addPriority: TaskPriority
   onProjectChange: (v: string) => void
+  onSubprojectChange: (v: string) => void
   onStaffChange: (v: string) => void
   onTitleChange: (v: string) => void
   onScopeChange: (v: TaskScope) => void
@@ -90,13 +101,16 @@ interface AddTaskFormProps {
 /** Inline add-task form rendered above the table when showAdd is true. */
 function AddTaskForm({
   projectOptions,
+  subprojectOptions,
   staffOptions,
   addProjectId,
+  addSubprojectId,
   addStaffId,
   addTitle,
   addScope,
   addPriority,
   onProjectChange,
+  onSubprojectChange,
   onStaffChange,
   onTitleChange,
   onScopeChange,
@@ -118,6 +132,19 @@ function AddTaskForm({
         {projectOptions.map(p => (
           <option key={p.id} value={p.id}>
             {p.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.addSelect}
+        value={addSubprojectId}
+        onChange={e => onSubprojectChange(e.currentTarget.value)}
+        aria-label="Subproject"
+      >
+        {subprojectOptions.length === 0 && <option value="">-- no subprojects --</option>}
+        {subprojectOptions.map(s => (
+          <option key={s.id} value={s.id}>
+            {s.name}
           </option>
         ))}
       </select>
@@ -185,6 +212,7 @@ export function TaskListPage() {
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
   const [addProjectId, setAddProjectId] = useState('')
+  const [addSubprojectId, setAddSubprojectId] = useState('')
   const [addStaffId, setAddStaffId] = useState('')
   const [addTitle, setAddTitle] = useState('')
   const [addScope, setAddScope] = useState<TaskScope>(TASK_SCOPES[0])
@@ -193,6 +221,8 @@ export function TaskListPage() {
   const [errorMsg, setErrorMsg] = useState('')
   const pageRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
+
+  const { subprojects: addSubprojects } = useSubprojects(addProjectId || null)
 
   useEffect(() => {
     pageRef.current?.focus()
@@ -203,12 +233,26 @@ export function TaskListPage() {
   }, [projects, addProjectId])
 
   useEffect(() => {
+    if (addSubprojects.length > 0) {
+      const noneEntry = addSubprojects.find(s => s.name === 'None')
+      setAddSubprojectId(noneEntry ? noneEntry.id : addSubprojects[0]!.id)
+    } else {
+      setAddSubprojectId('')
+    }
+  }, [addSubprojects])
+
+  useEffect(() => {
     if (tasks.length > 0) setSelectedIdx(i => Math.min(i, tasks.length - 1))
   }, [tasks.length])
 
   useEffect(() => {
     if (showAdd) titleRef.current?.focus()
   }, [showAdd])
+
+  const handleProjectChange = useCallback((v: string) => {
+    setAddProjectId(v)
+    setAddSubprojectId('')
+  }, [])
 
   const cancelAdd = useCallback(() => {
     setShowAdd(false)
@@ -225,8 +269,13 @@ export function TaskListPage() {
       setErrorMsg('Select a project')
       return
     }
+    if (!addSubprojectId) {
+      setErrorMsg('Select a subproject')
+      return
+    }
     await createTask({
       projectId: addProjectId,
+      subprojectId: addSubprojectId,
       staffId: addStaffId || undefined,
       title: addTitle.trim(),
       scope: addScope,
@@ -236,7 +285,7 @@ export function TaskListPage() {
     setAddTitle('')
     setShowAdd(false)
     setErrorMsg('')
-  }, [addTitle, addProjectId, addStaffId, addScope, addPriority, createTask])
+  }, [addTitle, addProjectId, addSubprojectId, addStaffId, addScope, addPriority, createTask])
 
   const confirmDeleteYes = useCallback(async () => {
     if (!confirmDelete) return
@@ -349,13 +398,16 @@ export function TaskListPage() {
       {showAdd && (
         <AddTaskForm
           projectOptions={projects}
+          subprojectOptions={addSubprojects}
           staffOptions={staff}
           addProjectId={addProjectId}
+          addSubprojectId={addSubprojectId}
           addStaffId={addStaffId}
           addTitle={addTitle}
           addScope={addScope}
           addPriority={addPriority}
-          onProjectChange={setAddProjectId}
+          onProjectChange={handleProjectChange}
+          onSubprojectChange={setAddSubprojectId}
           onStaffChange={setAddStaffId}
           onTitleChange={setAddTitle}
           onScopeChange={setAddScope}
@@ -376,11 +428,7 @@ export function TaskListPage() {
           <span>STAFF</span>
           <span>AGE</span>
         </div>
-        {loading ? (
-          <div className={styles.loading}>LOADING...</div>
-        ) : tasks.length === 0 ? (
-          <div className={styles.empty}>NO TASKS - PRESS [A] TO ADD</div>
-        ) : null}
+        <TaskTableStatus loading={loading} count={tasks.length} />
         {tasks.map((task, idx) => (
           <TaskItem
             key={task.id}

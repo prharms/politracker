@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useProjects } from '../../hooks/use-projects'
 import { useClients } from '../../hooks/use-clients'
+import { useSubprojects } from '../../hooks/use-subprojects'
 import { PROJECT_TYPES, PROJECT_STATUSES } from '../../../shared/constants'
 import styles from './CrudPage.module.css'
 import type { ProjectDto } from '../../../shared/dtos/project-dto'
@@ -8,6 +9,155 @@ import type { ProjectDto } from '../../../shared/dtos/project-dto'
 interface ConfirmDelete {
   id: string
   name: string
+}
+
+interface SubprojectPanelProps {
+  projectId: string
+  projectName: string
+}
+
+/** Subproject list with inline CRUD for the selected project. */
+function SubprojectPanel({ projectId, projectName }: SubprojectPanelProps) {
+  const { subprojects, createSubproject, updateSubproject, deleteSubproject } =
+    useSubprojects(projectId)
+  const [showAdd, setShowAdd] = useState(false)
+  const [addName, setAddName] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingValue, setEditingValue] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
+  const [errorMsg, setErrorMsg] = useState('')
+  const addRef = useRef<HTMLInputElement>(null)
+  const editRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (showAdd) addRef.current?.focus()
+  }, [showAdd])
+
+  useEffect(() => {
+    if (editingId) editRef.current?.focus()
+  }, [editingId])
+
+  const submitAdd = useCallback(async () => {
+    if (!addName.trim()) {
+      setErrorMsg('Name is required')
+      return
+    }
+    await createSubproject({ projectId, name: addName.trim() })
+    setAddName('')
+    setShowAdd(false)
+    setErrorMsg('')
+  }, [addName, projectId, createSubproject])
+
+  const commitEdit = useCallback(async () => {
+    if (!editingId || !editingValue.trim()) {
+      setEditingId(null)
+      return
+    }
+    await updateSubproject(editingId, { name: editingValue.trim() })
+    setEditingId(null)
+  }, [editingId, editingValue, updateSubproject])
+
+  const confirmDeleteYes = useCallback(async () => {
+    if (!confirmDelete) return
+    const result = await deleteSubproject(confirmDelete.id)
+    if (!result.deleted) setErrorMsg(result.reason ?? 'Cannot delete')
+    setConfirmDelete(null)
+  }, [confirmDelete, deleteSubproject])
+
+  return (
+    <div className={styles.subSection}>
+      <div className={styles.subHeader}>
+        <span className={styles.subTitle}>SUBPROJECTS - {projectName}</span>
+        <button
+          className={styles.hint}
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          onClick={() => setShowAdd(v => !v)}
+        >
+          [A] ADD
+        </button>
+      </div>
+      {errorMsg && (
+        <div className={styles.error} onClick={() => setErrorMsg('')}>
+          {errorMsg}
+        </div>
+      )}
+      {confirmDelete && (
+        <div className={styles.confirmRow}>
+          <span>DELETE &quot;{confirmDelete.name}&quot;?</span>
+          <button className={styles.confirmYes} onClick={() => void confirmDeleteYes()}>
+            [Y] YES
+          </button>
+          <button className={styles.confirmNo} onClick={() => setConfirmDelete(null)}>
+            [N] NO
+          </button>
+        </div>
+      )}
+      {showAdd && (
+        <div className={styles.addRow}>
+          <span className={styles.addLabel}>NEW SUBPROJECT &gt;</span>
+          <input
+            ref={addRef}
+            className={styles.addInput}
+            placeholder="SUBPROJECT NAME"
+            value={addName}
+            onChange={e => setAddName(e.currentTarget.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') void submitAdd()
+              if (e.key === 'Escape') {
+                setShowAdd(false)
+                setAddName('')
+              }
+              e.stopPropagation()
+            }}
+          />
+          <button className={styles.addSubmit} onClick={() => void submitAdd()}>
+            [ENTER]
+          </button>
+        </div>
+      )}
+      <div className={styles.colHeader} style={{ gridTemplateColumns: '1fr 8ch' }}>
+        <span>NAME</span>
+        <span>DEL</span>
+      </div>
+      {subprojects.length === 0 && <div className={styles.empty}>NO SUBPROJECTS</div>}
+      {subprojects.map(sub => (
+        <div key={sub.id} className={styles.row} style={{ gridTemplateColumns: '1fr 8ch' }}>
+          <span
+            className={styles.editableCell}
+            title="Click to rename"
+            onClick={() => {
+              setEditingId(sub.id)
+              setEditingValue(sub.name)
+            }}
+          >
+            {editingId === sub.id ? (
+              <input
+                ref={editRef}
+                className={styles.inlineInput}
+                value={editingValue}
+                onChange={e => setEditingValue(e.currentTarget.value)}
+                onBlur={() => void commitEdit()}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') void commitEdit()
+                  if (e.key === 'Escape') setEditingId(null)
+                  e.stopPropagation()
+                }}
+              />
+            ) : (
+              sub.name
+            )}
+          </span>
+          <button
+            className={styles.confirmNo}
+            style={{ fontSize: '0.85em' }}
+            onClick={() => setConfirmDelete({ id: sub.id, name: sub.name })}
+          >
+            [D]
+          </button>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 /** Projects management page. */
@@ -125,6 +275,8 @@ export function ProjectsPage() {
   const openEdit = (id: string, field: keyof ProjectDto, value: string) => {
     setEditingField({ id, field, value })
   }
+
+  const selectedProject = projects[selectedIdx]
 
   return (
     <div ref={pageRef} className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
@@ -258,6 +410,14 @@ export function ProjectsPage() {
           </div>
         ))}
       </div>
+
+      {selectedProject && (
+        <SubprojectPanel
+          key={selectedProject.id}
+          projectId={selectedProject.id}
+          projectName={selectedProject.name}
+        />
+      )}
     </div>
   )
 }

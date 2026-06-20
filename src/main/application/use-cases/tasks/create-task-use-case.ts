@@ -10,6 +10,7 @@ export class CreateTaskUseCase {
   execute(input: NewTaskInput): TaskDto {
     if (!input.title.trim()) throw new Error('Task title must not be empty')
     if (!input.projectId.trim()) throw new Error('Project id must not be empty')
+    if (!input.subprojectId.trim()) throw new Error('Subproject id must not be empty')
     return this.repo.create(input)
   }
 }

@@ -68,14 +68,17 @@ export const deliverables = sqliteTable('deliverables', {
 
 /**
  * Tasks - the atomic unit of work assigned to a project.
- * Optionally scoped to a subproject and assigned to a staff member.
+ * Must be scoped to a subproject (every project has a default "None" subproject).
+ * Optionally assigned to a staff member.
  */
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
     .notNull()
     .references(() => projects.id),
-  subprojectId: text('subproject_id').references(() => subprojects.id),
+  subprojectId: text('subproject_id')
+    .notNull()
+    .references(() => subprojects.id),
   staffId: text('staff_id').references(() => staff.id),
   title: text('title').notNull(),
   scope: text('scope').notNull(), // TaskScope

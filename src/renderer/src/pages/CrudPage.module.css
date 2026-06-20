@@ -252,3 +252,24 @@
   color: #e8e8e8;
   font-size: 24px;
 }
+
+/* Sub-section panel (e.g. subprojects within projects page) */
+
+.subSection {
+  margin-top: 16px;
+  border-top: 1px solid #333333;
+  padding-top: 8px;
+}
+
+.subHeader {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.subTitle {
+  font-size: 22px;
+  color: #22c55e;
+  letter-spacing: 0.08em;
+}

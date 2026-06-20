@@ -19,7 +19,7 @@ type TaskRow = {
   priority: string
   projectId: string
   projectName: string | null
-  subprojectId: string | null
+  subprojectId: string
   subprojectName: string | null
   staffId: string | null
   staffName: string | null
@@ -74,7 +74,7 @@ export class TaskRepository implements TaskRepositoryPort {
       .values({
         id,
         projectId: input.projectId,
-        subprojectId: input.subprojectId ?? null,
+        subprojectId: input.subprojectId,
         staffId: input.staffId ?? null,
         title: input.title,
         scope: input.scope,

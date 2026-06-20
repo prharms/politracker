@@ -9,7 +9,7 @@ export interface TaskDto {
   priority: TaskPriority
   projectId: string
   projectName: string
-  subprojectId: string | null
+  subprojectId: string
   subprojectName: string | null
   staffId: string | null
   staffName: string | null
@@ -30,7 +30,7 @@ export interface TaskListFilters {
 /** Fields required to create a new task. */
 export interface NewTaskInput {
   projectId: string
-  subprojectId?: string
+  subprojectId: string
   staffId?: string
   title: string
   scope: TaskScope
