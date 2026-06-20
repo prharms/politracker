@@ -13,6 +13,19 @@ import {
   apiDeleteStaff
 } from '../api/staff-api'
 
+/** Returns 0 for Active staff and 1 for Inactive so active members sort first. */
+function statusTier(s: StaffDto): number {
+  return s.status === 'Active' ? 0 : 1
+}
+
+/** Sorts staff active-first then alphabetically by name within each tier. */
+function sortStaff(list: StaffDto[]): StaffDto[] {
+  return [...list].sort((a, b) => {
+    const tierDiff = statusTier(a) - statusTier(b)
+    return tierDiff !== 0 ? tierDiff : a.name.localeCompare(b.name)
+  })
+}
+
 /** Provides the full staff list with create, update, toggle, and delete helpers. */
 export function useStaff() {
   const [staff, setStaff] = useState<StaffDto[]>([])
@@ -21,7 +34,7 @@ export function useStaff() {
   const reload = useCallback(async () => {
     setLoading(true)
     const data = await apiListStaff()
-    setStaff(data)
+    setStaff(sortStaff(data))
     setLoading(false)
   }, [])
 
@@ -31,16 +44,14 @@ export function useStaff() {
 
   const createStaff = useCallback(async (input: NewStaffInput): Promise<StaffDto> => {
     const created = await apiCreateStaff(input)
-    setStaff(prev => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+    setStaff(prev => sortStaff([...prev, created]))
     return created
   }, [])
 
   const updateStaff = useCallback(
     async (id: string, input: UpdateStaffInput): Promise<StaffDto> => {
       const updated = await apiUpdateStaff(id, input)
-      setStaff(prev =>
-        prev.map(s => (s.id === id ? updated : s)).sort((a, b) => a.name.localeCompare(b.name))
-      )
+      setStaff(prev => sortStaff(prev.map(s => (s.id === id ? updated : s))))
       return updated
     },
     []
@@ -50,7 +61,7 @@ export function useStaff() {
     async (id: string, current: 'Active' | 'Inactive'): Promise<StaffDto> => {
       const next = current === 'Active' ? 'Inactive' : 'Active'
       const updated = await apiUpdateStaffStatus(id, next)
-      setStaff(prev => prev.map(s => (s.id === id ? updated : s)))
+      setStaff(prev => sortStaff(prev.map(s => (s.id === id ? updated : s))))
       return updated
     },
     []

@@ -59,6 +59,7 @@ export default [
         window: 'readonly',
         navigator: 'readonly',
         HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
         HTMLInputElement: 'readonly',
         HTMLSelectElement: 'readonly',
         HTMLButtonElement: 'readonly',

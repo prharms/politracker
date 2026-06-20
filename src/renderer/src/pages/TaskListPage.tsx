@@ -199,8 +199,12 @@ export function TaskListPage() {
   const [addPriority, setAddPriority] = useState<'Normal'>('Normal')
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const pageRef = useRef<HTMLDivElement>(null)
   const addTitleRef = useRef<HTMLInputElement>(null)
 
+  useEffect(() => {
+    pageRef.current?.focus()
+  }, [])
   useEffect(() => {
     apiListSubjects().then(setSubjects)
   }, [])
@@ -282,7 +286,7 @@ export function TaskListPage() {
   )
 
   return (
-    <div className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
+    <div ref={pageRef} className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
       <div className={styles.header}>
         <span className={styles.title}>TASKS</span>
         <span className={styles.hint}>

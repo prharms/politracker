@@ -24,8 +24,13 @@ export function StaffPage() {
   const [editing, setEditing] = useState<EditingCell | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const pageRef = useRef<HTMLDivElement>(null)
   const addNameRef = useRef<HTMLInputElement>(null)
   const editInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    pageRef.current?.focus()
+  }, [])
 
   const clampIdx = useCallback(
     (idx: number) => Math.max(0, Math.min(idx, staff.length - 1)),
@@ -129,7 +134,7 @@ export function StaffPage() {
   }
 
   return (
-    <div className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
+    <div ref={pageRef} className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
       <div className={styles.header}>
         <span className={styles.title}>STAFF</span>
         <span className={styles.hint}>
