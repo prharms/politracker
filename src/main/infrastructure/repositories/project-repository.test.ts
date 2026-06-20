@@ -95,13 +95,13 @@ describe('ProjectRepository', () => {
     expect(repo.findById(created.id)).toBeNull()
   })
 
-  it('countSubjects returns zero initially', () => {
+  it('countTasks returns zero initially', () => {
     const created = repo.create({
       clientId: CLIENT_ID,
       name: 'P',
       type: 'Candidate Campaign',
       status: 'Active'
     })
-    expect(repo.countSubjects(created.id)).toBe(0)
+    expect(repo.countTasks(created.id)).toBe(0)
   })
 })

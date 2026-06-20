@@ -1,5 +1,5 @@
 import { registerClientHandlers } from './handlers/client-handlers'
-import { registerSubjectHandlers } from './handlers/subject-handlers'
+import { registerSubprojectHandlers } from './handlers/subproject-handlers'
 import { registerStaffHandlers } from './handlers/staff-handlers'
 import { registerProjectHandlers } from './handlers/project-handlers'
 import { registerTaskHandlers } from './handlers/task-handlers'
@@ -9,10 +9,10 @@ import type { CreateClientUseCase } from '../application/use-cases/clients/creat
 import type { UpdateClientUseCase } from '../application/use-cases/clients/update-client-use-case'
 import type { DeleteClientUseCase } from '../application/use-cases/clients/delete-client-use-case'
 
-import type { ListSubjectsUseCase } from '../application/use-cases/subjects/list-subjects-use-case'
-import type { CreateSubjectUseCase } from '../application/use-cases/subjects/create-subject-use-case'
-import type { UpdateSubjectUseCase } from '../application/use-cases/subjects/update-subject-use-case'
-import type { DeleteSubjectUseCase } from '../application/use-cases/subjects/delete-subject-use-case'
+import type { ListSubprojectsUseCase } from '../application/use-cases/subprojects/list-subprojects-use-case'
+import type { CreateSubprojectUseCase } from '../application/use-cases/subprojects/create-subproject-use-case'
+import type { UpdateSubprojectUseCase } from '../application/use-cases/subprojects/update-subproject-use-case'
+import type { DeleteSubprojectUseCase } from '../application/use-cases/subprojects/delete-subproject-use-case'
 
 import type { ListStaffUseCase } from '../application/use-cases/staff/list-staff-use-case'
 import type { CreateStaffUseCase } from '../application/use-cases/staff/create-staff-use-case'
@@ -36,10 +36,10 @@ export function registerAllHandlers(
   createClient: CreateClientUseCase,
   updateClient: UpdateClientUseCase,
   deleteClient: DeleteClientUseCase,
-  listSubjects: ListSubjectsUseCase,
-  createSubject: CreateSubjectUseCase,
-  updateSubject: UpdateSubjectUseCase,
-  deleteSubject: DeleteSubjectUseCase,
+  listSubprojects: ListSubprojectsUseCase,
+  createSubproject: CreateSubprojectUseCase,
+  updateSubproject: UpdateSubprojectUseCase,
+  deleteSubproject: DeleteSubprojectUseCase,
   listStaff: ListStaffUseCase,
   createStaff: CreateStaffUseCase,
   updateStaff: UpdateStaffUseCase,
@@ -55,7 +55,7 @@ export function registerAllHandlers(
   deleteTask: DeleteTaskUseCase
 ): void {
   registerClientHandlers(listClients, createClient, updateClient, deleteClient)
-  registerSubjectHandlers(listSubjects, createSubject, updateSubject, deleteSubject)
+  registerSubprojectHandlers(listSubprojects, createSubproject, updateSubproject, deleteSubproject)
   registerStaffHandlers(listStaff, createStaff, updateStaff, updateStaffStatus, deleteStaff)
   registerProjectHandlers(listProjects, createProject, updateProject, deleteProject)
   registerTaskHandlers(listTasks, createTask, updateTask, deleteTask)

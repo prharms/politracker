@@ -12,14 +12,6 @@ export type ProjectType = (typeof PROJECT_TYPES)[number]
 export const PROJECT_STATUSES = ['Active', 'Complete', 'Archived'] as const
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
 
-/** Valid subject types. */
-export const SUBJECT_TYPES = ['Individual', 'Organization', 'Measure'] as const
-export type SubjectType = (typeof SUBJECT_TYPES)[number]
-
-/** Valid subject statuses. */
-export const SUBJECT_STATUSES = ['Active', 'Inactive', 'Archived'] as const
-export type SubjectStatus = (typeof SUBJECT_STATUSES)[number]
-
 /** Valid staff statuses. */
 export const STAFF_STATUSES = ['Active', 'Inactive'] as const
 export type StaffStatus = (typeof STAFF_STATUSES)[number]
@@ -32,35 +24,26 @@ export type DeliverableType = (typeof DELIVERABLE_TYPES)[number]
 export const DELIVERABLE_STATUSES = ['Draft', 'In Review', 'Final'] as const
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number]
 
-/** Valid task types. */
-export const TASK_TYPES = ['Research', 'Document'] as const
-export type TaskType = (typeof TASK_TYPES)[number]
-
-/** Valid research task statuses. */
-export const RESEARCH_STATUSES = ['Backlog', 'In Progress', 'Review', 'Closed'] as const
-export type ResearchStatus = (typeof RESEARCH_STATUSES)[number]
-
-/** Valid document task statuses. */
-export const DOCUMENT_STATUSES = ['Draft', 'In Review', 'Final'] as const
-export type DocumentStatus = (typeof DOCUMENT_STATUSES)[number]
-
-/** All valid task statuses (union of research and document). */
-export const TASK_STATUSES = [...RESEARCH_STATUSES, ...DOCUMENT_STATUSES] as const
+/** Valid task statuses. */
+export const TASK_STATUSES = ['Backlog', 'In Progress', 'Review', 'Closed'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 
 /** Valid task priorities. */
 export const TASK_PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'] as const
 export type TaskPriority = (typeof TASK_PRIORITIES)[number]
 
-/** Valid research and task categories. */
-export const TASK_CATEGORIES = [
-  'Finance',
-  'Voting Record',
-  'Personal History',
-  'Legal',
-  'Public Statements',
-  'Associations',
-  'Other'
+/** Valid task scope values - describes the size and shape of the research assignment. */
+export const TASK_SCOPES = [
+  'Single Level 2',
+  'Multiple Level 2',
+  'Single Level 1',
+  'Multiple Level 1',
+  'Full Memo',
+  'Full Report',
+  'Video Grid',
+  'Other Appendix',
+  'A.1 Level 1',
+  'Summary of Findings'
 ] as const
 
-export type TaskCategory = (typeof TASK_CATEGORIES)[number]
+export type TaskScope = (typeof TASK_SCOPES)[number]

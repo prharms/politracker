@@ -11,8 +11,7 @@ type DeliverableRow = {
   projectId: string
   projectName: string | null
   parentDeliverableId: string | null
-  groupId: string | null
-  subjectId: string | null
+  subprojectId: string | null
   type: string
   title: string
   status: string
@@ -31,18 +30,18 @@ export class DeliverableRepository implements DeliverableRepositoryPort {
   listByProject(projectId: string): DeliverableDto[] {
     return this.queryJoined()
       .filter(r => r.projectId === projectId)
-      .map(this.toDto)
+      .map(toDto)
   }
 
   /** Return all deliverables across all projects. */
   listAll(): DeliverableDto[] {
-    return this.queryJoined().map(this.toDto)
+    return this.queryJoined().map(toDto)
   }
 
   /** Return a single deliverable by id, or null if not found. */
   findById(id: string): DeliverableDto | null {
     const rows = this.queryJoined().filter(r => r.id === id)
-    return rows.length > 0 ? this.toDto(rows[0]!) : null
+    return rows.length > 0 ? toDto(rows[0]!) : null
   }
 
   /** Persist a new deliverable and return it. */
@@ -55,8 +54,7 @@ export class DeliverableRepository implements DeliverableRepositoryPort {
         id,
         projectId: input.projectId,
         parentDeliverableId: input.parentDeliverableId ?? null,
-        groupId: input.groupId ?? null,
-        subjectId: input.subjectId ?? null,
+        subprojectId: input.subprojectId ?? null,
         type: input.type,
         title: input.title,
         status: input.status,
@@ -77,8 +75,7 @@ export class DeliverableRepository implements DeliverableRepositoryPort {
         projectId: deliverables.projectId,
         projectName: projects.name,
         parentDeliverableId: deliverables.parentDeliverableId,
-        groupId: deliverables.groupId,
-        subjectId: deliverables.subjectId,
+        subprojectId: deliverables.subprojectId,
         type: deliverables.type,
         title: deliverables.title,
         status: deliverables.status,
@@ -92,23 +89,22 @@ export class DeliverableRepository implements DeliverableRepositoryPort {
       .orderBy(deliverables.title)
       .all() as DeliverableRow[]
   }
+}
 
-  /** Map a raw join row to a DeliverableDto. */
-  private toDto(row: DeliverableRow): DeliverableDto {
-    return {
-      id: row.id,
-      projectId: row.projectId,
-      projectName: row.projectName ?? '',
-      parentDeliverableId: row.parentDeliverableId,
-      groupId: row.groupId,
-      subjectId: row.subjectId,
-      type: row.type as DeliverableType,
-      title: row.title,
-      status: row.status as DeliverableStatus,
-      dueDate: row.dueDate,
-      notes: row.notes,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt
-    }
+/** Map a raw join row to a DeliverableDto. */
+function toDto(row: DeliverableRow): DeliverableDto {
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    projectName: row.projectName ?? '',
+    parentDeliverableId: row.parentDeliverableId,
+    subprojectId: row.subprojectId,
+    type: row.type as DeliverableType,
+    title: row.title,
+    status: row.status as DeliverableStatus,
+    dueDate: row.dueDate,
+    notes: row.notes,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt
   }
 }

@@ -87,7 +87,7 @@ export function ProjectsPage() {
     const result = await deleteProject(confirmDelete.id)
     if (!result.deleted)
       setErrorMsg(
-        `Cannot delete - ${result.subjectCount} subject${result.subjectCount === 1 ? '' : 's'} exist`
+        `Cannot delete - ${result.taskCount} task${result.taskCount === 1 ? '' : 's'} exist`
       )
     setConfirmDelete(null)
   }, [confirmDelete, deleteProject])

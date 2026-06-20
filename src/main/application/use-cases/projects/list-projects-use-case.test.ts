@@ -21,7 +21,7 @@ const mockRepo: ProjectRepositoryPort = {
   create: vi.fn(),
   update: vi.fn(),
   delete: vi.fn(),
-  countSubjects: vi.fn().mockReturnValue(0)
+  countTasks: vi.fn().mockReturnValue(0)
 }
 
 describe('ListProjectsUseCase', () => {

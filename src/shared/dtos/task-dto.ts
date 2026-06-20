@@ -1,23 +1,18 @@
-import type { TaskType, TaskStatus, TaskPriority, TaskCategory } from '../constants'
+import type { TaskStatus, TaskPriority, TaskScope } from '../constants'
 
-/** Enriched task row - joins staff name, subject name, project name, deliverable title. */
+/** Enriched task row - joins staff name, project name, subproject name. */
 export interface TaskDto {
   id: string
   title: string
-  taskType: TaskType
-  category: TaskCategory
+  scope: TaskScope
   status: TaskStatus
   priority: TaskPriority
-  subjectId: string
-  subjectName: string
   projectId: string
   projectName: string
+  subprojectId: string | null
+  subprojectName: string | null
   staffId: string | null
   staffName: string | null
-  deliverableId: string | null
-  deliverableTitle: string | null
-  parentDocumentId: string | null
-  sortOrder: number | null
   dueDate: string | null
   notes: string | null
   closedAt: string | null
@@ -29,20 +24,16 @@ export interface TaskDto {
 export interface TaskListFilters {
   staffId?: string
   projectId?: string
-  deliverableId?: string
   status?: TaskStatus
 }
 
 /** Fields required to create a new task. */
 export interface NewTaskInput {
-  subjectId: string
+  projectId: string
+  subprojectId?: string
   staffId?: string
-  taskType: TaskType
-  deliverableId?: string
-  parentDocumentId?: string
-  sortOrder?: number
   title: string
-  category: TaskCategory
+  scope: TaskScope
   status: TaskStatus
   priority: TaskPriority
   dueDate?: string
@@ -52,10 +43,10 @@ export interface NewTaskInput {
 /** Fields that can be updated on a task. */
 export interface UpdateTaskInput {
   title?: string
+  scope?: TaskScope
   staffId?: string | null
   status?: TaskStatus
   priority?: TaskPriority
-  category?: TaskCategory
   dueDate?: string | null
   notes?: string | null
 }

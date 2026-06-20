@@ -1,7 +1,7 @@
 import { eq, and, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
-import { tasks, subjects, projects, staff, deliverables } from '../db/schema'
+import { tasks, projects, subprojects, staff } from '../db/schema'
 import type { TaskRepositoryPort } from '../../application/ports/task-repository-port'
 import type {
   TaskDto,
@@ -9,25 +9,20 @@ import type {
   NewTaskInput,
   UpdateTaskInput
 } from '../../../shared/dtos/task-dto'
-import type { TaskType, TaskStatus, TaskPriority, TaskCategory } from '../../../shared/constants'
+import type { TaskStatus, TaskPriority, TaskScope } from '../../../shared/constants'
 
 type TaskRow = {
   id: string
   title: string
-  taskType: string
-  category: string
+  scope: string
   status: string
   priority: string
-  subjectId: string
-  subjectName: string | null
-  projectId: string | null
+  projectId: string
   projectName: string | null
+  subprojectId: string | null
+  subprojectName: string | null
   staffId: string | null
   staffName: string | null
-  deliverableId: string | null
-  deliverableTitle: string | null
-  parentDocumentId: string | null
-  sortOrder: number | null
   dueDate: string | null
   notes: string | null
   closedAt: string | null
@@ -47,10 +42,9 @@ export class TaskRepository implements TaskRepositoryPort {
     const query = this.db
       .select(taskSelectShape())
       .from(tasks)
-      .leftJoin(subjects, eq(tasks.subjectId, subjects.id))
-      .leftJoin(projects, eq(subjects.projectId, projects.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .leftJoin(subprojects, eq(tasks.subprojectId, subprojects.id))
       .leftJoin(staff, eq(tasks.staffId, staff.id))
-      .leftJoin(deliverables, eq(tasks.deliverableId, deliverables.id))
 
     const rows = conditions.length > 0 ? query.where(and(...conditions)).all() : query.all()
 
@@ -62,10 +56,9 @@ export class TaskRepository implements TaskRepositoryPort {
     const row = this.db
       .select(taskSelectShape())
       .from(tasks)
-      .leftJoin(subjects, eq(tasks.subjectId, subjects.id))
-      .leftJoin(projects, eq(subjects.projectId, projects.id))
+      .leftJoin(projects, eq(tasks.projectId, projects.id))
+      .leftJoin(subprojects, eq(tasks.subprojectId, subprojects.id))
       .leftJoin(staff, eq(tasks.staffId, staff.id))
-      .leftJoin(deliverables, eq(tasks.deliverableId, deliverables.id))
       .where(eq(tasks.id, id))
       .get() as TaskRow | undefined
 
@@ -80,14 +73,11 @@ export class TaskRepository implements TaskRepositoryPort {
       .insert(tasks)
       .values({
         id,
-        subjectId: input.subjectId,
+        projectId: input.projectId,
+        subprojectId: input.subprojectId ?? null,
         staffId: input.staffId ?? null,
-        taskType: input.taskType,
-        deliverableId: input.deliverableId ?? null,
-        parentDocumentId: input.parentDocumentId ?? null,
-        sortOrder: input.sortOrder ?? null,
         title: input.title,
-        category: input.category,
+        scope: input.scope,
         status: input.status,
         priority: input.priority,
         dueDate: input.dueDate ?? null,
@@ -136,20 +126,15 @@ function taskSelectShape() {
   return {
     id: tasks.id,
     title: tasks.title,
-    taskType: tasks.taskType,
-    category: tasks.category,
+    scope: tasks.scope,
     status: tasks.status,
     priority: tasks.priority,
-    subjectId: tasks.subjectId,
-    subjectName: subjects.name,
-    projectId: subjects.projectId,
+    projectId: tasks.projectId,
     projectName: projects.name,
+    subprojectId: tasks.subprojectId,
+    subprojectName: subprojects.name,
     staffId: tasks.staffId,
     staffName: staff.name,
-    deliverableId: tasks.deliverableId,
-    deliverableTitle: deliverables.title,
-    parentDocumentId: tasks.parentDocumentId,
-    sortOrder: tasks.sortOrder,
     dueDate: tasks.dueDate,
     notes: tasks.notes,
     closedAt: tasks.closedAt,
@@ -165,10 +150,7 @@ function buildConditions(filters: TaskListFilters) {
     conditions.push(eq(tasks.staffId, filters.staffId))
   }
   if (filters.projectId) {
-    conditions.push(eq(subjects.projectId, filters.projectId))
-  }
-  if (filters.deliverableId) {
-    conditions.push(eq(tasks.deliverableId, filters.deliverableId))
+    conditions.push(eq(tasks.projectId, filters.projectId))
   }
   if (filters.status) {
     conditions.push(eq(tasks.status, filters.status))
@@ -181,20 +163,15 @@ function toDto(row: TaskRow): TaskDto {
   return {
     id: row.id,
     title: row.title,
-    taskType: row.taskType as TaskType,
-    category: row.category as TaskCategory,
+    scope: row.scope as TaskScope,
     status: row.status as TaskStatus,
     priority: row.priority as TaskPriority,
-    subjectId: row.subjectId,
-    subjectName: row.subjectName ?? '',
-    projectId: row.projectId ?? '',
+    projectId: row.projectId,
     projectName: row.projectName ?? '',
+    subprojectId: row.subprojectId,
+    subprojectName: row.subprojectName,
     staffId: row.staffId,
     staffName: row.staffName,
-    deliverableId: row.deliverableId,
-    deliverableTitle: row.deliverableTitle,
-    parentDocumentId: row.parentDocumentId,
-    sortOrder: row.sortOrder,
     dueDate: row.dueDate,
     notes: row.notes,
     closedAt: row.closedAt,
@@ -203,9 +180,9 @@ function toDto(row: TaskRow): TaskDto {
   }
 }
 
-/** Return true when the given status represents a closed/final state. */
+/** Return true when the given status represents a closed state. */
 function isClosedStatus(status: string): boolean {
-  return status === 'Closed' || status === 'Final'
+  return status === 'Closed'
 }
 
 /** Build the column patch object for a task update. */
@@ -213,10 +190,10 @@ function buildTaskPatch(input: UpdateTaskInput, current: TaskDto, now: string) {
   const closedAt = input.status && isClosedStatus(input.status) ? now : current.closedAt
   return {
     title: input.title ?? current.title,
+    scope: input.scope ?? current.scope,
     staffId: input.staffId !== undefined ? input.staffId : current.staffId,
     status: input.status ?? current.status,
     priority: input.priority ?? current.priority,
-    category: input.category ?? current.category,
     dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate,
     notes: input.notes !== undefined ? input.notes : current.notes,
     closedAt,

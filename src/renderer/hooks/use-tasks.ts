@@ -26,7 +26,7 @@ export function useTasks(filters: TaskListFilters): {
       setTasks(data)
       setLoading(false)
     })
-  }, [filters.staffId, filters.projectId, filters.deliverableId, filters.status])
+  }, [filters.staffId, filters.projectId, filters.status])
 
   useEffect(() => {
     load()

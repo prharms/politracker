@@ -2,7 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { TaskListFilters, NewTaskInput, UpdateTaskInput } from '../shared/dtos/task-dto'
 import type { NewStaffInput, UpdateStaffInput } from '../shared/dtos/staff-dto'
 import type { NewClientInput, UpdateClientInput } from '../shared/dtos/client-dto'
-import type { NewSubjectInput, UpdateSubjectInput } from '../shared/dtos/subject-dto'
+import type { NewSubprojectInput, UpdateSubprojectInput } from '../shared/dtos/subproject-dto'
 import type { NewProjectInput, UpdateProjectInput } from '../shared/dtos/project-dto'
 
 /** Expose typed API to renderer process via context bridge. */
@@ -14,12 +14,12 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('clients:update', id, input),
     delete: (id: string) => ipcRenderer.invoke('clients:delete', id)
   },
-  subjects: {
-    list: (projectId?: string) => ipcRenderer.invoke('subjects:list', projectId),
-    create: (input: NewSubjectInput) => ipcRenderer.invoke('subjects:create', input),
-    update: (id: string, input: UpdateSubjectInput) =>
-      ipcRenderer.invoke('subjects:update', id, input),
-    delete: (id: string) => ipcRenderer.invoke('subjects:delete', id)
+  subprojects: {
+    list: (projectId?: string) => ipcRenderer.invoke('subprojects:list', projectId),
+    create: (input: NewSubprojectInput) => ipcRenderer.invoke('subprojects:create', input),
+    update: (id: string, input: UpdateSubprojectInput) =>
+      ipcRenderer.invoke('subprojects:update', id, input),
+    delete: (id: string) => ipcRenderer.invoke('subprojects:delete', id)
   },
   staff: {
     list: () => ipcRenderer.invoke('staff:list'),

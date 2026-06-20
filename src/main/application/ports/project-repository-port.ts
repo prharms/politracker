@@ -21,6 +21,6 @@ export interface ProjectRepositoryPort {
   /** Delete a project by id. */
   delete(id: string): void
 
-  /** Return the number of subjects linked to this project. */
-  countSubjects(id: string): number
+  /** Return the number of tasks linked to this project. */
+  countTasks(id: string): number
 }

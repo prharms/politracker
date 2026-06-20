@@ -6,21 +6,16 @@ import type { TaskRepositoryPort } from '../../ports/task-repository-port'
 
 const stub = {
   id: 't1',
-  title: 'Research finance',
-  taskType: 'Research' as const,
-  category: 'Finance' as const,
+  title: 'Research finances',
+  scope: 'Full Memo' as const,
   status: 'Backlog' as const,
   priority: 'Normal' as const,
-  subjectId: 's1',
-  subjectName: 'John Smith',
   projectId: 'p1',
   projectName: 'CA Gov 2026',
+  subprojectId: null,
+  subprojectName: null,
   staffId: null,
   staffName: null,
-  deliverableId: null,
-  deliverableTitle: null,
-  parentDocumentId: null,
-  sortOrder: null,
   dueDate: null,
   notes: null,
   closedAt: null,
@@ -42,10 +37,9 @@ describe('CreateTaskUseCase', () => {
   it('creates a task and returns it', () => {
     const repo = mockRepo()
     const result = new CreateTaskUseCase(repo).execute({
-      subjectId: 's1',
-      title: 'Research finance',
-      taskType: 'Research',
-      category: 'Finance',
+      projectId: 'p1',
+      title: 'Research finances',
+      scope: 'Full Memo',
       status: 'Backlog',
       priority: 'Normal'
     })
@@ -56,27 +50,25 @@ describe('CreateTaskUseCase', () => {
   it('throws when title is empty', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
-        subjectId: 's1',
+        projectId: 'p1',
         title: '  ',
-        taskType: 'Research',
-        category: 'Finance',
+        scope: 'Full Memo',
         status: 'Backlog',
         priority: 'Normal'
       })
     ).toThrow('Task title must not be empty')
   })
 
-  it('throws when subjectId is empty', () => {
+  it('throws when projectId is empty', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
-        subjectId: '  ',
+        projectId: '  ',
         title: 'X',
-        taskType: 'Research',
-        category: 'Finance',
+        scope: 'Full Memo',
         status: 'Backlog',
         priority: 'Normal'
       })
-    ).toThrow('Subject id must not be empty')
+    ).toThrow('Project id must not be empty')
   })
 })
 

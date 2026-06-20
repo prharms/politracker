@@ -22,7 +22,7 @@ const mockRepo = (): ProjectRepositoryPort => ({
   create: vi.fn().mockReturnValue(stub),
   update: vi.fn().mockReturnValue({ ...stub, name: 'Updated' }),
   delete: vi.fn(),
-  countSubjects: vi.fn().mockReturnValue(0)
+  countTasks: vi.fn().mockReturnValue(0)
 })
 
 describe('CreateProjectUseCase', () => {
@@ -82,18 +82,18 @@ describe('UpdateProjectUseCase', () => {
 })
 
 describe('DeleteProjectUseCase', () => {
-  it('deletes when no subjects exist', () => {
+  it('deletes when no tasks exist', () => {
     const repo = mockRepo()
     const result = new DeleteProjectUseCase(repo).execute('p1')
-    expect(result).toEqual({ deleted: true, subjectCount: 0 })
+    expect(result).toEqual({ deleted: true, taskCount: 0 })
     expect(repo.delete).toHaveBeenCalledWith('p1')
   })
 
-  it('does not delete when subjects exist', () => {
+  it('does not delete when tasks exist', () => {
     const repo = mockRepo()
-    repo.countSubjects = vi.fn().mockReturnValue(2)
+    repo.countTasks = vi.fn().mockReturnValue(2)
     const result = new DeleteProjectUseCase(repo).execute('p1')
-    expect(result).toEqual({ deleted: false, subjectCount: 2 })
+    expect(result).toEqual({ deleted: false, taskCount: 2 })
     expect(repo.delete).not.toHaveBeenCalled()
   })
 

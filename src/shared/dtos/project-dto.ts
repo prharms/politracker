@@ -33,5 +33,5 @@ export interface UpdateProjectInput {
 /** Result returned by a delete project operation. */
 export interface DeleteProjectResult {
   deleted: boolean
-  subjectCount: number
+  taskCount: number
 }

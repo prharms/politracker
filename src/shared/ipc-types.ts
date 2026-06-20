@@ -13,11 +13,11 @@ import type {
   DeleteClientResult
 } from './dtos/client-dto'
 import type {
-  SubjectDto,
-  NewSubjectInput,
-  UpdateSubjectInput,
-  DeleteSubjectResult
-} from './dtos/subject-dto'
+  SubprojectDto,
+  NewSubprojectInput,
+  UpdateSubprojectInput,
+  DeleteSubprojectResult
+} from './dtos/subproject-dto'
 import type {
   ProjectDto,
   NewProjectInput,
@@ -33,12 +33,12 @@ export interface ClientsAPI {
   delete: (id: string) => Promise<DeleteClientResult>
 }
 
-/** Typed API for subject IPC channels. */
-export interface SubjectsAPI {
-  list: (projectId?: string) => Promise<SubjectDto[]>
-  create: (input: NewSubjectInput) => Promise<SubjectDto>
-  update: (id: string, input: UpdateSubjectInput) => Promise<SubjectDto>
-  delete: (id: string) => Promise<DeleteSubjectResult>
+/** Typed API for subproject IPC channels. */
+export interface SubprojectsAPI {
+  list: (projectId?: string) => Promise<SubprojectDto[]>
+  create: (input: NewSubprojectInput) => Promise<SubprojectDto>
+  update: (id: string, input: UpdateSubprojectInput) => Promise<SubprojectDto>
+  delete: (id: string) => Promise<DeleteSubprojectResult>
 }
 
 /** Typed API for staff IPC channels. */
@@ -69,7 +69,7 @@ export interface TasksAPI {
 /** Typed window.api interface - all IPC channels exposed by preload. */
 export interface ElectronAPI {
   clients: ClientsAPI
-  subjects: SubjectsAPI
+  subprojects: SubprojectsAPI
   staff: StaffAPI
   projects: ProjectsAPI
   tasks: TasksAPI

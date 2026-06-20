@@ -1,7 +1,7 @@
 import { eq, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
-import { projects, clients, subjects } from '../db/schema'
+import { projects, clients, tasks } from '../db/schema'
 import type { ProjectRepositoryPort } from '../../application/ports/project-repository-port'
 import type {
   ProjectDto,
@@ -123,12 +123,12 @@ export class ProjectRepository implements ProjectRepositoryPort {
     this.db.delete(projects).where(eq(projects.id, id)).run()
   }
 
-  /** Return the number of subjects linked to this project. */
-  countSubjects(id: string): number {
+  /** Return the number of tasks linked to this project. */
+  countTasks(id: string): number {
     const result = this.db
       .select({ value: count() })
-      .from(subjects)
-      .where(eq(subjects.projectId, id))
+      .from(tasks)
+      .where(eq(tasks.projectId, id))
       .get()
     return result?.value ?? 0
   }

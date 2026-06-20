@@ -2,31 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import styles from './CrudPage.module.css'
 import { useTasks } from '../../hooks/use-tasks'
 import { useFilterOptions } from '../../hooks/use-filter-options'
-import { apiListSubjects } from '../../api/subjects-api'
 import type { TaskDto, TaskListFilters } from '../../../shared/dtos/task-dto'
-import type { SubjectDto } from '../../../shared/dtos/subject-dto'
-import {
-  TASK_CATEGORIES,
-  TASK_PRIORITIES,
-  RESEARCH_STATUSES,
-  DOCUMENT_STATUSES
-} from '../../../shared/constants'
+import { TASK_SCOPES, TASK_PRIORITIES, TASK_STATUSES } from '../../../shared/constants'
+import type { TaskScope, TaskPriority } from '../../../shared/constants'
 
-const COLS = '1fr 12ch 7ch 10ch 7ch 8ch 6ch'
-
-/** Abbreviate a task category for compact display. */
-function abbrCategory(category: string): string {
-  const map: Record<string, string> = {
-    Finance: 'FIN',
-    'Voting Record': 'VOT',
-    'Personal History': 'PERS',
-    Legal: 'LEGAL',
-    'Public Statements': 'STMT',
-    Associations: 'ASSOC',
-    Other: 'OTH'
-  }
-  return map[category] ?? category
-}
+const COLS = '1fr 14ch 14ch 12ch 8ch 8ch 6ch'
 
 /** Format elapsed time since a given ISO timestamp. */
 function formatAge(isoString: string): string {
@@ -39,8 +19,7 @@ function formatAge(isoString: string): string {
 
 /** Return true if the task has been open for more than 7 days. */
 function isStale(task: TaskDto): boolean {
-  const closed = task.status === 'Closed' || task.status === 'Final'
-  return !closed && Date.now() - new Date(task.createdAt).getTime() > 7 * 24 * 60 * 60 * 1000
+  return task.status !== 'Closed' && Date.now() - new Date(task.createdAt).getTime() > 7 * 86400000
 }
 
 interface ConfirmDelete {
@@ -56,7 +35,7 @@ interface TaskItemProps {
 
 /** A single task row rendered inside the task list table. */
 function TaskItem({ task, selected, onSelect }: TaskItemProps) {
-  const closed = task.status === 'Closed' || task.status === 'Final'
+  const closed = task.status === 'Closed'
   const urgent = task.priority === 'Urgent' && !closed
   const stale = isStale(task)
   return (
@@ -67,19 +46,23 @@ function TaskItem({ task, selected, onSelect }: TaskItemProps) {
     >
       <span
         className={styles.editableCell}
-        style={urgent ? { color: '#ef4444' } : undefined}
+        style={urgent ? { color: '#ff3333' } : undefined}
         title={task.title}
       >
         {task.title}
       </span>
-      <span className={styles.cellMeta}>{task.subjectName}</span>
-      <span className={styles.cellMeta}>{abbrCategory(task.category)}</span>
+      <span className={styles.cellMeta} title={task.projectName}>
+        {task.projectName}
+      </span>
+      <span className={styles.cellMeta} title={task.scope}>
+        {task.scope}
+      </span>
       <span className={styles.cellMeta}>{task.status}</span>
-      <span className={styles.cellMeta} style={urgent ? { color: '#ef4444' } : undefined}>
+      <span className={styles.cellMeta} style={urgent ? { color: '#ff3333' } : undefined}>
         {task.priority}
       </span>
       <span className={styles.cellMeta}>{task.staffName ?? '-'}</span>
-      <span className={styles.cellMeta} style={stale ? { color: '#ef4444' } : undefined}>
+      <span className={styles.cellMeta} style={stale ? { color: '#ff3333' } : undefined}>
         {formatAge(task.createdAt)}
       </span>
     </div>
@@ -87,58 +70,74 @@ function TaskItem({ task, selected, onSelect }: TaskItemProps) {
 }
 
 interface AddTaskFormProps {
-  subjects: SubjectDto[]
-  addSubjectId: string
+  projectOptions: { id: string; name: string }[]
+  staffOptions: { id: string; name: string }[]
+  addProjectId: string
+  addStaffId: string
   addTitle: string
-  addType: 'Research' | 'Document'
-  addCategory: string
-  addPriority: string
-  onSubjectChange: (v: string) => void
+  addScope: TaskScope
+  addPriority: TaskPriority
+  onProjectChange: (v: string) => void
+  onStaffChange: (v: string) => void
   onTitleChange: (v: string) => void
-  onTypeChange: (v: 'Research' | 'Document') => void
-  onCategoryChange: (v: string) => void
-  onPriorityChange: (v: string) => void
+  onScopeChange: (v: TaskScope) => void
+  onPriorityChange: (v: TaskPriority) => void
   onSubmit: () => void
   onCancel: () => void
-  addTitleRef: React.RefObject<HTMLInputElement | null>
+  titleRef: React.RefObject<HTMLInputElement | null>
 }
 
 /** Inline add-task form rendered above the table when showAdd is true. */
 function AddTaskForm({
-  subjects,
-  addSubjectId,
+  projectOptions,
+  staffOptions,
+  addProjectId,
+  addStaffId,
   addTitle,
-  addType,
-  addCategory,
+  addScope,
   addPriority,
-  onSubjectChange,
+  onProjectChange,
+  onStaffChange,
   onTitleChange,
-  onTypeChange,
-  onCategoryChange,
+  onScopeChange,
   onPriorityChange,
   onSubmit,
   onCancel,
-  addTitleRef
+  titleRef
 }: AddTaskFormProps) {
   return (
     <div className={styles.addRow} style={{ flexWrap: 'wrap', gap: '8px' }}>
       <span className={styles.addLabel}>ADD TASK &gt;</span>
       <select
         className={styles.addSelect}
-        value={addSubjectId}
-        onChange={e => onSubjectChange(e.currentTarget.value)}
+        value={addProjectId}
+        onChange={e => onProjectChange(e.currentTarget.value)}
+        aria-label="Project"
       >
-        {subjects.length === 0 && <option value="">-- add a subject first --</option>}
-        {subjects.map(s => (
+        {projectOptions.length === 0 && <option value="">-- no projects --</option>}
+        {projectOptions.map(p => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      <select
+        className={styles.addSelect}
+        value={addStaffId}
+        onChange={e => onStaffChange(e.currentTarget.value)}
+        aria-label="Staff"
+      >
+        <option value="">-- unassigned --</option>
+        {staffOptions.map(s => (
           <option key={s.id} value={s.id}>
             {s.name}
           </option>
         ))}
       </select>
       <input
-        ref={addTitleRef}
+        ref={titleRef}
         className={styles.addInput}
-        placeholder="TASK TITLE"
+        placeholder="WHAT NEEDS TO BE DONE"
         value={addTitle}
         onChange={e => onTitleChange(e.currentTarget.value)}
         onKeyDown={e => {
@@ -149,27 +148,21 @@ function AddTaskForm({
       />
       <select
         className={styles.addSelect}
-        value={addType}
-        onChange={e => onTypeChange(e.currentTarget.value as 'Research' | 'Document')}
+        value={addScope}
+        onChange={e => onScopeChange(e.currentTarget.value as TaskScope)}
+        aria-label="Scope"
       >
-        <option value="Research">Research</option>
-        <option value="Document">Document</option>
-      </select>
-      <select
-        className={styles.addSelect}
-        value={addCategory}
-        onChange={e => onCategoryChange(e.currentTarget.value)}
-      >
-        {TASK_CATEGORIES.map(c => (
-          <option key={c} value={c}>
-            {c}
+        {TASK_SCOPES.map(s => (
+          <option key={s} value={s}>
+            {s}
           </option>
         ))}
       </select>
       <select
         className={styles.addSelect}
         value={addPriority}
-        onChange={e => onPriorityChange(e.currentTarget.value)}
+        onChange={e => onPriorityChange(e.currentTarget.value as TaskPriority)}
+        aria-label="Priority"
       >
         {TASK_PRIORITIES.map(p => (
           <option key={p} value={p}>
@@ -189,36 +182,32 @@ export function TaskListPage() {
   const [filters, setFilters] = useState<TaskListFilters>({})
   const { tasks, loading, createTask, deleteTask } = useTasks(filters)
   const { staff, projects } = useFilterOptions()
-  const [subjects, setSubjects] = useState<SubjectDto[]>([])
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
-  const [addSubjectId, setAddSubjectId] = useState('')
+  const [addProjectId, setAddProjectId] = useState('')
+  const [addStaffId, setAddStaffId] = useState('')
   const [addTitle, setAddTitle] = useState('')
-  const [addType, setAddType] = useState<'Research' | 'Document'>('Research')
-  const [addCategory, setAddCategory] = useState(TASK_CATEGORIES[0])
-  const [addPriority, setAddPriority] = useState<'Normal'>('Normal')
+  const [addScope, setAddScope] = useState<TaskScope>(TASK_SCOPES[0])
+  const [addPriority, setAddPriority] = useState<TaskPriority>('Normal')
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const pageRef = useRef<HTMLDivElement>(null)
-  const addTitleRef = useRef<HTMLInputElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     pageRef.current?.focus()
   }, [])
-  useEffect(() => {
-    apiListSubjects().then(setSubjects)
-  }, [])
 
   useEffect(() => {
-    if (subjects.length > 0 && !addSubjectId) setAddSubjectId(subjects[0]!.id)
-  }, [subjects, addSubjectId])
+    if (projects.length > 0 && !addProjectId) setAddProjectId(projects[0]!.id)
+  }, [projects, addProjectId])
 
   useEffect(() => {
     if (tasks.length > 0) setSelectedIdx(i => Math.min(i, tasks.length - 1))
   }, [tasks.length])
 
   useEffect(() => {
-    if (showAdd) addTitleRef.current?.focus()
+    if (showAdd) titleRef.current?.focus()
   }, [showAdd])
 
   const cancelAdd = useCallback(() => {
@@ -232,22 +221,22 @@ export function TaskListPage() {
       setErrorMsg('Title is required')
       return
     }
-    if (!addSubjectId) {
-      setErrorMsg('Select a subject')
+    if (!addProjectId) {
+      setErrorMsg('Select a project')
       return
     }
     await createTask({
-      subjectId: addSubjectId,
+      projectId: addProjectId,
+      staffId: addStaffId || undefined,
       title: addTitle.trim(),
-      taskType: addType,
-      category: addCategory,
-      status: addType === 'Research' ? 'Backlog' : 'Draft',
+      scope: addScope,
+      status: 'Backlog',
       priority: addPriority
     })
     setAddTitle('')
     setShowAdd(false)
     setErrorMsg('')
-  }, [addTitle, addSubjectId, addType, addCategory, addPriority, createTask])
+  }, [addTitle, addProjectId, addStaffId, addScope, addPriority, createTask])
 
   const confirmDeleteYes = useCallback(async () => {
     if (!confirmDelete) return
@@ -267,6 +256,7 @@ export function TaskListPage() {
         e.preventDefault()
         setShowAdd(true)
       } else if ((e.key === 'd' || e.key === 'D') && tasks[selectedIdx]) {
+        e.preventDefault()
         setConfirmDelete({ id: tasks[selectedIdx].id, title: tasks[selectedIdx].title })
       }
     },
@@ -330,12 +320,7 @@ export function TaskListPage() {
           }
         >
           <option value="">ALL STATUS</option>
-          {RESEARCH_STATUSES.map(s => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-          {DOCUMENT_STATUSES.filter(s => !RESEARCH_STATUSES.includes(s as never)).map(s => (
+          {TASK_STATUSES.map(s => (
             <option key={s} value={s}>
               {s}
             </option>
@@ -363,28 +348,29 @@ export function TaskListPage() {
 
       {showAdd && (
         <AddTaskForm
-          subjects={subjects}
-          addSubjectId={addSubjectId}
+          projectOptions={projects}
+          staffOptions={staff}
+          addProjectId={addProjectId}
+          addStaffId={addStaffId}
           addTitle={addTitle}
-          addType={addType}
-          addCategory={addCategory}
+          addScope={addScope}
           addPriority={addPriority}
-          onSubjectChange={setAddSubjectId}
+          onProjectChange={setAddProjectId}
+          onStaffChange={setAddStaffId}
           onTitleChange={setAddTitle}
-          onTypeChange={setAddType}
-          onCategoryChange={v => setAddCategory(v as typeof addCategory)}
-          onPriorityChange={v => setAddPriority(v as typeof addPriority)}
+          onScopeChange={setAddScope}
+          onPriorityChange={(v: TaskPriority) => setAddPriority(v)}
           onSubmit={() => void submitAdd()}
           onCancel={cancelAdd}
-          addTitleRef={addTitleRef}
+          titleRef={titleRef}
         />
       )}
 
       <div className={styles.tableWrap}>
         <div className={styles.colHeader} style={{ gridTemplateColumns: COLS }}>
           <span>TITLE</span>
-          <span>SUBJECT</span>
-          <span>CAT</span>
+          <span>PROJECT</span>
+          <span>SCOPE</span>
           <span>STATUS</span>
           <span>PRI</span>
           <span>STAFF</span>

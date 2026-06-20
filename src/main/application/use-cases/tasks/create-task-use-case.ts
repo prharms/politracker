@@ -9,7 +9,7 @@ export class CreateTaskUseCase {
   /** Validate input, persist a new task, and return the enriched record. */
   execute(input: NewTaskInput): TaskDto {
     if (!input.title.trim()) throw new Error('Task title must not be empty')
-    if (!input.subjectId.trim()) throw new Error('Subject id must not be empty')
+    if (!input.projectId.trim()) throw new Error('Project id must not be empty')
     return this.repo.create(input)
   }
 }

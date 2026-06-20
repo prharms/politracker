@@ -2,13 +2,12 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { TaskRepository } from './task-repository'
 import { createTestDatabase } from '../db/test-database'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { clients, projects, subjects, staff } from '../db/schema'
+import { clients, projects, staff } from '../db/schema'
 
 let db: BetterSQLite3Database
 let repo: TaskRepository
 const CLIENT_ID = 'client-1'
 const PROJECT_ID = 'proj-1'
-const SUBJECT_ID = 'subj-1'
 const STAFF_ID = 'staff-1'
 
 beforeEach(() => {
@@ -27,20 +26,6 @@ beforeEach(() => {
       updatedAt: now
     })
     .run()
-  db.insert(subjects)
-    .values({
-      id: SUBJECT_ID,
-      projectId: PROJECT_ID,
-      groupId: null,
-      name: 'John Smith',
-      type: 'Individual',
-      role: 'Candidate',
-      status: 'Active',
-      notes: null,
-      createdAt: now,
-      updatedAt: now
-    })
-    .run()
   db.insert(staff)
     .values({ id: STAFF_ID, name: 'Alice', initials: 'A', status: 'Active', createdAt: now })
     .run()
@@ -48,11 +33,10 @@ beforeEach(() => {
 })
 
 const newTask = () => ({
-  subjectId: SUBJECT_ID,
+  projectId: PROJECT_ID,
   staffId: STAFF_ID,
-  taskType: 'Research' as const,
   title: 'Check campaign finance',
-  category: 'Finance' as const,
+  scope: 'Full Memo' as const,
   status: 'Backlog' as const,
   priority: 'Normal' as const
 })
@@ -65,10 +49,9 @@ describe('TaskRepository', () => {
   it('create persists a task and returns it with joined names', () => {
     const result = repo.create(newTask())
     expect(result.title).toBe('Check campaign finance')
-    expect(result.subjectName).toBe('John Smith')
     expect(result.projectName).toBe('CA Gov 2026')
     expect(result.staffName).toBe('Alice')
-    expect(result.taskType).toBe('Research')
+    expect(result.scope).toBe('Full Memo')
   })
 
   it('list returns all tasks when no filters are given', () => {
@@ -151,11 +134,5 @@ describe('TaskRepository', () => {
     repo.create(newTask())
     repo.create({ ...newTask(), title: 'Second task' })
     expect(repo.countByStaff(STAFF_ID)).toBe(2)
-  })
-
-  it('list filters by deliverableId', () => {
-    repo.create(newTask())
-    const results = repo.list({ deliverableId: 'nonexistent' })
-    expect(results).toHaveLength(0)
   })
 })
