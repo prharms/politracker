@@ -1,0 +1,62 @@
+---
+description: Always use make.ps1 targets instead of raw CLI commands when a target exists
+alwaysApply: true
+---
+
+# Use make.ps1 Targets - No Freelance Commands
+
+## ZERO DISCRETION POLICY
+
+If a `make.ps1` target exists for an operation, use it. No exceptions.
+Do not substitute a raw `npm`, `npx`, `tsc`, `eslint`, `prettier`, or `vitest`
+command when a make target wraps it - even for a "quick" check.
+
+## Why this matters
+
+`./make.ps1 test` runs `npm run rebuild:node` via the `pretest` npm lifecycle hook
+before invoking vitest. This rebuilds `better-sqlite3` for the correct Node.js
+ABI (Electron vs system Node.js differ). Bypassing the make target skips the
+rebuild and causes native module ABI mismatch errors.
+
+The same logic applies to other targets: they may run setup steps, enforce
+ordering, or apply flags that a raw command would miss.
+
+## Required substitutions
+
+| Never use this | Use this instead |
+|---|---|
+| `npx vitest run` | `./make.ps1 test` or `./make.ps1 test-fast` |
+| `npx vitest run --coverage` | `./make.ps1 test` |
+| `tsc --noEmit` | `./make.ps1 type-check` |
+| `tsc --build` | `./make.ps1 arch-check` |
+| `eslint .` | `./make.ps1 lint` (runs full suite) |
+| `prettier --check .` | `./make.ps1 lint` (runs full suite) |
+| `prettier --write .` | `./make.ps1 format` |
+| `drizzle-kit generate` | `./make.ps1 migration` |
+| `drizzle-kit migrate` | `./make.ps1 db-upgrade` |
+| `electron-vite dev` | `./make.ps1 dev` |
+| `electron-vite build` | `./make.ps1 build` |
+
+## When a raw command IS acceptable
+
+Only when there is no make target for the operation - for example:
+- `git` commands (no make target)
+- `npm install` (no make target)
+- Inspecting a specific file or running a one-off script not covered by make
+
+## Full target reference
+
+```powershell
+./make.ps1 test        # vitest run --coverage (enforces thresholds) + rebuild
+./make.ps1 test-fast   # vitest run (no coverage, faster) + rebuild
+./make.ps1 test-e2e    # playwright
+./make.ps1 test-all    # test + test-e2e
+./make.ps1 lint        # tsc + arch-check + eslint + prettier
+./make.ps1 arch-check  # tsc --build: layer contract enforcement
+./make.ps1 type-check  # tsc --noEmit only
+./make.ps1 format      # prettier --write + eslint --fix
+./make.ps1 dev         # electron-vite dev
+./make.ps1 build       # electron-vite build + electron-builder
+./make.ps1 migration   # drizzle-kit generate + rebuild:node
+./make.ps1 db-upgrade  # drizzle-kit migrate + rebuild:node
+```
