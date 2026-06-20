@@ -1,1 +1,0 @@
-ALTER TABLE `staff` ADD `initials` text NOT NULL;

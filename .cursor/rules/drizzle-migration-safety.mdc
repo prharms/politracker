@@ -1,0 +1,93 @@
+---
+description: Safe migration workflow for drizzle-kit - required review before db-upgrade
+alwaysApply: true
+---
+
+# Drizzle Migration Safety
+
+## ZERO DISCRETION POLICY
+
+Never issue `./make.ps1 db-upgrade` without completing the full checklist below.
+No exceptions - not for "simple" migrations, not for dev databases, not for empty tables.
+
+## Known drizzle-kit bugs
+
+### Column rename - INSERT SELECT uses wrong column names
+
+When drizzle-kit generates a migration for a column rename via table recreation,
+it uses the NEW column name on the SELECT side:
+
+```sql
+-- WRONG (what drizzle-kit generates):
+INSERT INTO __new_table(new_col) SELECT new_col FROM old_table;
+
+-- CORRECT (what it must be):
+INSERT INTO __new_table(new_col) SELECT old_col FROM old_table;
+```
+
+This fails with "no such column" at runtime. The SELECT side must reference OLD column names.
+
+### Preferred fix: skip table recreation entirely
+
+For a pure column rename, drizzle-kit generates 8+ lines of table recreation.
+The correct approach is one line - write it manually and skip drizzle-kit generate:
+
+```sql
+ALTER TABLE deliverables RENAME COLUMN group_id TO subproject_id;
+```
+
+SQLite has supported `ALTER TABLE RENAME COLUMN` since 3.25.0.
+
+## Two migration paths - know which one applies
+
+### Path 1 - app startup (always runs, no action needed)
+
+`database.ts` calls `migrate()` on every startup. It reads `migrations/` and
+applies any unapplied migrations to the Electron database automatically.
+Use this for normal development - just restart the app after generating a migration.
+
+### Path 2 - db-upgrade (for pre-applying to a live database)
+
+`./make.ps1 db-upgrade` runs drizzle-kit migrate against the same AppData database.
+Use this only when you need to apply a migration WITHOUT restarting the app,
+or to verify the migration runs correctly before the app starts.
+
+The app startup path is sufficient for all normal development.
+
+## When to reset migrations entirely (dev only)
+
+If the schema has diverged significantly and the database has no important data:
+
+1. Delete the database file
+2. Delete all `.sql` files and `.json` snapshots in `migrations/`
+3. Reset `migrations/meta/_journal.json` to `{"version":"7","dialect":"sqlite","entries":[]}`
+4. Run `./make.ps1 migration` - generates one clean migration from current schema
+5. Start the app - it auto-migrates on first startup
+
+## Mandatory checklist before every db-upgrade on a live database with data
+
+- [ ] Read the generated .sql file in full
+- [ ] For every INSERT SELECT: verify SELECT side uses OLD column names
+- [ ] For every new NOT NULL column with no old equivalent: confirm table is empty,
+      or provide a valid default in the SELECT
+- [ ] Back up the database:
+      `Copy-Item "$env:LOCALAPPDATA\Politicket\data\politicket.db" "$env:LOCALAPPDATA\Politicket\data\politicket.db.bak"`
+- [ ] Run `./make.ps1 db-upgrade`
+- [ ] If it fails: `Copy-Item "...\politicket.db.bak" "...\politicket.db"` to restore
+
+## Safe vs unsafe operations
+
+Safe (drizzle-kit handles correctly):
+- Add a nullable column
+- Add a table
+- Drop a column
+- Drop a table
+- Rename a table (ALTER TABLE RENAME)
+
+Unsafe (require manual SQL or manual review):
+- Rename a column - use `ALTER TABLE t RENAME COLUMN old TO new` directly
+- Add a NOT NULL column to a table with existing rows - needs a default
+
+## Rollback
+
+drizzle-kit has no downgrade. The only rollback is restoring from backup.

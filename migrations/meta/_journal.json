@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1781748826089,
-      "tag": "0000_zippy_cable",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1781753783387,
-      "tag": "0001_lame_shatterstar",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1750373060000,
-      "tag": "0002_purge_subjects_add_subprojects",
+      "when": 1781922175456,
+      "tag": "0000_crazy_clea",
       "breakpoints": true
     }
   ]
