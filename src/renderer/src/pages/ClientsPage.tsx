@@ -152,56 +152,63 @@ export function ClientsPage() {
         </div>
       )}
       <div className={styles.tableWrap}>
-        <div className={styles.colHeader} style={{ gridTemplateColumns: '1fr 10ch' }}>
-          <span>NAME</span>
-          <span>SINCE</span>
-        </div>
         {loading && <div className={styles.loading}>LOADING...</div>}
         {!loading && clients.length === 0 && (
           <div className={styles.empty}>NO CLIENTS - PRESS [A] TO ADD</div>
         )}
-        {clients.map((client, idx) => (
-          <div
-            key={client.id}
-            className={`${styles.row} ${idx === selectedIdx && !showAdd ? styles.rowSelected : ''}`}
-            style={{ gridTemplateColumns: '1fr 10ch' }}
-            onClick={() => setSelectedIdx(idx)}
-          >
-            <span
-              className={styles.editableCell}
-              title="Click to edit"
-              onClick={e => {
-                e.stopPropagation()
-                setSelectedIdx(idx)
-                setEditing({ id: client.id, value: client.name })
-              }}
-            >
-              {editing?.id === client.id ? (
-                <input
-                  ref={editInputRef}
-                  className={styles.inlineInput}
-                  value={editing.value}
-                  onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
-                  onBlur={() => void commitEdit()}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') void commitEdit()
-                    if (e.key === 'Escape') setEditing(null)
-                    e.stopPropagation()
-                  }}
-                />
-              ) : (
-                client.name
-              )}
-            </span>
-            <span className={styles.cellMeta}>
-              {new Date(client.createdAt).toLocaleDateString('en-US', {
-                month: 'numeric',
-                day: 'numeric',
-                year: '2-digit'
-              })}
-            </span>
-          </div>
-        ))}
+        {!loading && clients.length > 0 && (
+          <table className={styles.dataTable}>
+            <thead>
+              <tr>
+                <th>NAME</th>
+                <th style={{ width: '10ch' }}>SINCE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {clients.map((client, idx) => (
+                <tr
+                  key={client.id}
+                  className={idx === selectedIdx && !showAdd ? styles.rowSelected : ''}
+                  onClick={() => setSelectedIdx(idx)}
+                >
+                  <td
+                    className={styles.editableCell}
+                    title="Click to edit"
+                    onClick={e => {
+                      e.stopPropagation()
+                      setSelectedIdx(idx)
+                      setEditing({ id: client.id, value: client.name })
+                    }}
+                  >
+                    {editing?.id === client.id ? (
+                      <input
+                        ref={editInputRef}
+                        className={styles.inlineInput}
+                        value={editing.value}
+                        onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
+                        onBlur={() => void commitEdit()}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') void commitEdit()
+                          if (e.key === 'Escape') setEditing(null)
+                          e.stopPropagation()
+                        }}
+                      />
+                    ) : (
+                      client.name
+                    )}
+                  </td>
+                  <td>
+                    {new Date(client.createdAt).toLocaleDateString('en-US', {
+                      month: 'numeric',
+                      day: 'numeric',
+                      year: '2-digit'
+                    })}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )

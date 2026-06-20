@@ -148,63 +148,73 @@
   overflow-y: auto;
 }
 
-.colHeader {
-  display: grid;
-  gap: 8px;
+/* Table grid */
+
+.dataTable {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.dataTable thead th {
   padding: 3px 8px;
+  text-align: left;
   font-size: 20px;
   color: #22c55e;
+  font-weight: normal;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid #222222;
-  margin-bottom: 2px;
+  border-bottom: 1px solid #22c55e;
+  border-right: 1px solid #2a2a2a;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
-.row {
-  display: grid;
-  gap: 8px;
+.dataTable thead th:last-child {
+  border-right: none;
+}
+
+.dataTable tbody td {
   padding: 3px 8px;
-  cursor: pointer;
-  border-bottom: 1px solid #0d0d0d;
-  align-items: center;
+  font-size: 24px;
+  color: #e8e8e8;
+  border-bottom: 1px solid #1a1a1a;
+  border-right: 1px solid #2a2a2a;
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
-.row:hover {
+.dataTable tbody td:last-child {
+  border-right: none;
+}
+
+.dataTable tbody tr {
+  cursor: pointer;
+}
+
+.dataTable tbody tr:hover td {
   background: #0a0a0a;
 }
 
-.rowSelected {
+.dataTable tbody tr.rowSelected td {
   background: #0d1a0d;
+}
+
+.dataTable tbody tr.rowSelected td:first-child {
   border-left: 2px solid #22c55e;
   padding-left: 6px;
 }
 
-/* Generic cell types */
-
-.cell {
-  overflow: hidden;
-  white-space: nowrap;
-  color: #e8e8e8;
-}
+/* Cell variants */
 
 .cellAccent {
-  overflow: hidden;
-  white-space: nowrap;
   color: #22c55e;
   cursor: pointer;
 }
 
-.cellMeta {
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 24px;
-  color: #e8e8e8;
-}
-
 .editableCell {
-  overflow: hidden;
-  white-space: nowrap;
   cursor: pointer;
-  color: #e8e8e8;
 }
 
 /* Status button - clickable toggle */

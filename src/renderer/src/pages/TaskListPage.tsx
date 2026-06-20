@@ -7,8 +7,6 @@ import type { TaskDto, TaskListFilters } from '../../../shared/dtos/task-dto'
 import { TASK_SCOPES, TASK_PRIORITIES, TASK_STATUSES } from '../../../shared/constants'
 import type { TaskScope, TaskPriority } from '../../../shared/constants'
 
-const COLS = '1fr 14ch 14ch 12ch 8ch 8ch 6ch'
-
 /** Renders loading indicator or empty-state message for the task table. */
 function TaskTableStatus({ loading, count }: { loading: boolean; count: number }) {
   if (loading) return <div className={styles.loading}>LOADING...</div>
@@ -41,39 +39,29 @@ interface TaskItemProps {
   onSelect: () => void
 }
 
-/** A single task row rendered inside the task list table. */
+/** A single task row rendered inside the task table body. */
 function TaskItem({ task, selected, onSelect }: TaskItemProps) {
   const closed = task.status === 'Closed'
   const urgent = task.priority === 'Urgent' && !closed
   const stale = isStale(task)
+  const project =
+    task.subprojectName && task.subprojectName !== 'None'
+      ? `${task.projectName}/${task.subprojectName}`
+      : task.projectName
   return (
-    <div
-      className={`${styles.row} ${selected ? styles.rowSelected : ''}`}
-      style={{ gridTemplateColumns: COLS, opacity: closed ? 0.45 : 1 }}
+    <tr
+      className={selected ? styles.rowSelected : ''}
+      style={{ opacity: closed ? 0.45 : 1 }}
       onClick={onSelect}
     >
-      <span
-        className={styles.editableCell}
-        style={urgent ? { color: '#ff3333' } : undefined}
-        title={task.title}
-      >
-        {task.title}
-      </span>
-      <span className={styles.cellMeta} title={task.projectName}>
-        {task.projectName}
-      </span>
-      <span className={styles.cellMeta} title={task.scope}>
-        {task.scope}
-      </span>
-      <span className={styles.cellMeta}>{task.status}</span>
-      <span className={styles.cellMeta} style={urgent ? { color: '#ff3333' } : undefined}>
-        {task.priority}
-      </span>
-      <span className={styles.cellMeta}>{task.staffName ?? '-'}</span>
-      <span className={styles.cellMeta} style={stale ? { color: '#ff3333' } : undefined}>
-        {formatAge(task.createdAt)}
-      </span>
-    </div>
+      <td style={urgent ? { color: '#ff3333' } : undefined}>{task.title}</td>
+      <td>{project}</td>
+      <td>{task.scope}</td>
+      <td>{task.status}</td>
+      <td style={urgent ? { color: '#ff3333' } : undefined}>{task.priority}</td>
+      <td>{task.staffName ?? '-'}</td>
+      <td style={stale ? { color: '#ff3333' } : undefined}>{formatAge(task.createdAt)}</td>
+    </tr>
   )
 }
 
@@ -336,6 +324,7 @@ export function TaskListPage() {
         <span className={styles.addLabel}>FILTER:</span>
         <select
           className={styles.addSelect}
+          style={{ flex: 1 }}
           value={filters.staffId ?? ''}
           onChange={e => setFilters(f => ({ ...f, staffId: e.currentTarget.value || undefined }))}
         >
@@ -348,6 +337,7 @@ export function TaskListPage() {
         </select>
         <select
           className={styles.addSelect}
+          style={{ flex: 1 }}
           value={filters.projectId ?? ''}
           onChange={e => setFilters(f => ({ ...f, projectId: e.currentTarget.value || undefined }))}
         >
@@ -360,6 +350,7 @@ export function TaskListPage() {
         </select>
         <select
           className={styles.addSelect}
+          style={{ flex: 1 }}
           value={filters.status ?? ''}
           onChange={e =>
             setFilters(f => ({
@@ -419,24 +410,30 @@ export function TaskListPage() {
       )}
 
       <div className={styles.tableWrap}>
-        <div className={styles.colHeader} style={{ gridTemplateColumns: COLS }}>
-          <span>TITLE</span>
-          <span>PROJECT</span>
-          <span>SCOPE</span>
-          <span>STATUS</span>
-          <span>PRI</span>
-          <span>STAFF</span>
-          <span>AGE</span>
-        </div>
         <TaskTableStatus loading={loading} count={tasks.length} />
-        {tasks.map((task, idx) => (
-          <TaskItem
-            key={task.id}
-            task={task}
-            selected={idx === selectedIdx && !showAdd}
-            onSelect={() => setSelectedIdx(idx)}
-          />
-        ))}
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th>TITLE</th>
+              <th style={{ width: '16ch' }}>PROJECT</th>
+              <th style={{ width: '12ch' }}>SCOPE</th>
+              <th style={{ width: '10ch' }}>STATUS</th>
+              <th style={{ width: '8ch' }}>PRI</th>
+              <th style={{ width: '8ch' }}>STAFF</th>
+              <th style={{ width: '5ch' }}>AGE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {tasks.map((task, idx) => (
+              <TaskItem
+                key={task.id}
+                task={task}
+                selected={idx === selectedIdx && !showAdd}
+                onSelect={() => setSelectedIdx(idx)}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

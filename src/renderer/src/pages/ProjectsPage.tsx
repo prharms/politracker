@@ -115,47 +115,57 @@ function SubprojectPanel({ projectId, projectName }: SubprojectPanelProps) {
           </button>
         </div>
       )}
-      <div className={styles.colHeader} style={{ gridTemplateColumns: '1fr 8ch' }}>
-        <span>NAME</span>
-        <span>DEL</span>
-      </div>
       {subprojects.length === 0 && <div className={styles.empty}>NO SUBPROJECTS</div>}
-      {subprojects.map(sub => (
-        <div key={sub.id} className={styles.row} style={{ gridTemplateColumns: '1fr 8ch' }}>
-          <span
-            className={styles.editableCell}
-            title="Click to rename"
-            onClick={() => {
-              setEditingId(sub.id)
-              setEditingValue(sub.name)
-            }}
-          >
-            {editingId === sub.id ? (
-              <input
-                ref={editRef}
-                className={styles.inlineInput}
-                value={editingValue}
-                onChange={e => setEditingValue(e.currentTarget.value)}
-                onBlur={() => void commitEdit()}
-                onKeyDown={e => {
-                  if (e.key === 'Enter') void commitEdit()
-                  if (e.key === 'Escape') setEditingId(null)
-                  e.stopPropagation()
-                }}
-              />
-            ) : (
-              sub.name
-            )}
-          </span>
-          <button
-            className={styles.confirmNo}
-            style={{ fontSize: '0.85em' }}
-            onClick={() => setConfirmDelete({ id: sub.id, name: sub.name })}
-          >
-            [D]
-          </button>
-        </div>
-      ))}
+      {subprojects.length > 0 && (
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th>NAME</th>
+              <th style={{ width: '6ch' }}>DEL</th>
+            </tr>
+          </thead>
+          <tbody>
+            {subprojects.map(sub => (
+              <tr key={sub.id}>
+                <td
+                  className={styles.editableCell}
+                  title="Click to rename"
+                  onClick={() => {
+                    setEditingId(sub.id)
+                    setEditingValue(sub.name)
+                  }}
+                >
+                  {editingId === sub.id ? (
+                    <input
+                      ref={editRef}
+                      className={styles.inlineInput}
+                      value={editingValue}
+                      onChange={e => setEditingValue(e.currentTarget.value)}
+                      onBlur={() => void commitEdit()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void commitEdit()
+                        if (e.key === 'Escape') setEditingId(null)
+                        e.stopPropagation()
+                      }}
+                    />
+                  ) : (
+                    sub.name
+                  )}
+                </td>
+                <td>
+                  <button
+                    className={styles.confirmNo}
+                    style={{ fontSize: '0.85em' }}
+                    onClick={() => setConfirmDelete({ id: sub.id, name: sub.name })}
+                  >
+                    [D]
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -357,58 +367,63 @@ export function ProjectsPage() {
         </div>
       )}
       <div className={styles.tableWrap}>
-        <div className={styles.colHeader} style={{ gridTemplateColumns: '18ch 1fr 16ch 10ch' }}>
-          <span>CLIENT</span>
-          <span>PROJECT NAME</span>
-          <span>TYPE</span>
-          <span>STATUS</span>
-        </div>
         {loading && <div className={styles.loading}>LOADING...</div>}
         {!loading && projects.length === 0 && (
           <div className={styles.empty}>NO PROJECTS - PRESS [A] TO ADD</div>
         )}
-        {projects.map((proj, idx) => (
-          <div
-            key={proj.id}
-            className={`${styles.row} ${idx === selectedIdx && !showAdd ? styles.rowSelected : ''}`}
-            style={{ gridTemplateColumns: '18ch 1fr 16ch 10ch' }}
-            onClick={() => setSelectedIdx(idx)}
-          >
-            <span className={styles.cellMeta}>{proj.clientName}</span>
-            <span
-              className={styles.editableCell}
-              title="Click to edit"
-              onClick={e => {
-                e.stopPropagation()
-                setSelectedIdx(idx)
-                openEdit(proj.id, 'name', proj.name)
-              }}
-            >
-              {editingField?.id === proj.id && editingField.field === 'name' ? (
-                <input
-                  ref={editInputRef}
-                  className={styles.inlineInput}
-                  value={editingField.value}
-                  onChange={e => setEditingField({ ...editingField, value: e.currentTarget.value })}
-                  onBlur={() => void commitEdit()}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') void commitEdit()
-                    if (e.key === 'Escape') setEditingField(null)
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '16ch' }}>CLIENT</th>
+              <th>PROJECT NAME</th>
+              <th style={{ width: '20ch' }}>TYPE</th>
+              <th style={{ width: '10ch' }}>STATUS</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((proj, idx) => (
+              <tr
+                key={proj.id}
+                className={idx === selectedIdx && !showAdd ? styles.rowSelected : ''}
+                onClick={() => setSelectedIdx(idx)}
+              >
+                <td>{proj.clientName}</td>
+                <td
+                  className={styles.editableCell}
+                  title="Click to edit"
+                  onClick={e => {
                     e.stopPropagation()
+                    setSelectedIdx(idx)
+                    openEdit(proj.id, 'name', proj.name)
                   }}
-                />
-              ) : (
-                proj.name
-              )}
-            </span>
-            <span className={styles.cellMeta}>{proj.type}</span>
-            <span
-              className={`${styles.cellMeta} ${proj.status === 'Active' ? styles.active : styles.inactive}`}
-            >
-              {proj.status}
-            </span>
-          </div>
-        ))}
+                >
+                  {editingField?.id === proj.id && editingField.field === 'name' ? (
+                    <input
+                      ref={editInputRef}
+                      className={styles.inlineInput}
+                      value={editingField.value}
+                      onChange={e =>
+                        setEditingField({ ...editingField, value: e.currentTarget.value })
+                      }
+                      onBlur={() => void commitEdit()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void commitEdit()
+                        if (e.key === 'Escape') setEditingField(null)
+                        e.stopPropagation()
+                      }}
+                    />
+                  ) : (
+                    proj.name
+                  )}
+                </td>
+                <td>{proj.type}</td>
+                <td className={proj.status === 'Active' ? styles.active : styles.inactive}>
+                  {proj.status}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {selectedProject && (
