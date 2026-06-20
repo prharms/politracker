@@ -1,4 +1,9 @@
-import type { TaskDto, TaskListFilters, NewTaskInput } from '../../../shared/dtos/task-dto'
+import type {
+  TaskDto,
+  TaskListFilters,
+  NewTaskInput,
+  UpdateTaskInput
+} from '../../../shared/dtos/task-dto'
 
 /** Repository port for task persistence. */
 export interface TaskRepositoryPort {
@@ -12,5 +17,14 @@ export interface TaskRepositoryPort {
   create(input: NewTaskInput): TaskDto
 
   /** Update task fields and return the updated enriched row. */
+  update(id: string, input: UpdateTaskInput): TaskDto
+
+  /** Update task status only and return the updated enriched row. */
   updateStatus(id: string, status: string, closedAt: string | null): TaskDto
+
+  /** Delete a task by id. */
+  delete(id: string): void
+
+  /** Return the number of tasks assigned to the given staff member. */
+  countByStaff(staffId: string): number
 }

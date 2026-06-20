@@ -68,4 +68,40 @@ describe('ProjectRepository', () => {
   it('findById returns null for an unknown id', () => {
     expect(repo.findById('nonexistent')).toBeNull()
   })
+
+  it('update changes the project name', () => {
+    const created = repo.create({
+      clientId: CLIENT_ID,
+      name: 'Old',
+      type: 'Candidate Campaign',
+      status: 'Active'
+    })
+    const updated = repo.update(created.id, { name: 'New Name' })
+    expect(updated.name).toBe('New Name')
+  })
+
+  it('update throws when the project does not exist', () => {
+    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow('Project record not found')
+  })
+
+  it('delete removes the project', () => {
+    const created = repo.create({
+      clientId: CLIENT_ID,
+      name: 'Del',
+      type: 'Candidate Campaign',
+      status: 'Active'
+    })
+    repo.delete(created.id)
+    expect(repo.findById(created.id)).toBeNull()
+  })
+
+  it('countSubjects returns zero initially', () => {
+    const created = repo.create({
+      clientId: CLIENT_ID,
+      name: 'P',
+      type: 'Candidate Campaign',
+      status: 'Active'
+    })
+    expect(repo.countSubjects(created.id)).toBe(0)
+  })
 })

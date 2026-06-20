@@ -52,8 +52,6 @@ switch ($Target) {
     }
     "ci" {
         Write-Banner "POLITICKET - CI (lint + test)"
-        Write-Host "  Rebuilding better-sqlite3 for Node.js..." -ForegroundColor DarkGray
-        npm run "rebuild:node" 2>&1 | Out-Null
         $n = 0
         if (-not (Invoke-Step "Type check (main + renderer)" "lint:types")) { $n++ }
         if (-not (Invoke-Step "Architecture check" "arch-check")) { $n++ }
@@ -64,16 +62,12 @@ switch ($Target) {
     }
     "test" {
         Write-Banner "POLITICKET - Test Suite"
-        Write-Host "  Rebuilding better-sqlite3 for Node.js..." -ForegroundColor DarkGray
-        npm run "rebuild:node" 2>&1 | Out-Null
         Write-Host ""
         npm run test
         if ($LASTEXITCODE -ne 0) { exit 1 }
     }
     "test-fast" {
         Write-Banner "POLITICKET - Test Suite (fast)"
-        Write-Host "  Rebuilding better-sqlite3 for Node.js..." -ForegroundColor DarkGray
-        npm run "rebuild:node" 2>&1 | Out-Null
         Write-Host ""
         npm run "test:fast"
         if ($LASTEXITCODE -ne 0) { exit 1 }
@@ -83,14 +77,10 @@ switch ($Target) {
     "format"      { npm run format }
     "test-e2e"    { npm run "test:e2e" }
     "test-all"    { npm run test; if ($LASTEXITCODE -eq 0) { npm run "test:e2e" } }
-    "dev" {
-        Write-Host "  Rebuilding better-sqlite3 for Electron..." -ForegroundColor DarkGray
-        npm run "rebuild:electron" 2>&1 | Out-Null
-        npm run dev
-    }
+    "dev"         { npm run dev }
     "build"       { npm run build }
-    "migration"   { npm run migration }
-    "db-upgrade"  { npm run "db-upgrade" }
+    "migration"   { npm run rebuild:node; npm run migration }
+    "db-upgrade"  { npm run rebuild:node; npm run "db-upgrade" }
     "coverage"    { npx vitest run --coverage --reporter=html }
     "help" {
         Write-Host ""

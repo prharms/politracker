@@ -41,7 +41,9 @@ beforeEach(() => {
       updatedAt: now
     })
     .run()
-  db.insert(staff).values({ id: STAFF_ID, name: 'Alice', status: 'Active', createdAt: now }).run()
+  db.insert(staff)
+    .values({ id: STAFF_ID, name: 'Alice', initials: 'A', status: 'Active', createdAt: now })
+    .run()
   repo = new TaskRepository(db)
 })
 
@@ -120,5 +122,40 @@ describe('TaskRepository', () => {
     const updated = repo.updateStatus(created.id, 'In Progress', null)
     expect(updated.status).toBe('In Progress')
     expect(updated.closedAt).toBeNull()
+  })
+
+  it('update changes the title', () => {
+    const created = repo.create(newTask())
+    const updated = repo.update(created.id, { title: 'Updated title' })
+    expect(updated.title).toBe('Updated title')
+  })
+
+  it('update with Closed status sets closedAt', () => {
+    const created = repo.create(newTask())
+    const updated = repo.update(created.id, { status: 'Closed' })
+    expect(updated.status).toBe('Closed')
+    expect(updated.closedAt).not.toBeNull()
+  })
+
+  it('update throws when record does not exist', () => {
+    expect(() => repo.update('nonexistent', { title: 'X' })).toThrow('Task record not found')
+  })
+
+  it('delete removes the task', () => {
+    const created = repo.create(newTask())
+    repo.delete(created.id)
+    expect(repo.findById(created.id)).toBeNull()
+  })
+
+  it('countByStaff returns the number of tasks for a staff member', () => {
+    repo.create(newTask())
+    repo.create({ ...newTask(), title: 'Second task' })
+    expect(repo.countByStaff(STAFF_ID)).toBe(2)
+  })
+
+  it('list filters by deliverableId', () => {
+    repo.create(newTask())
+    const results = repo.list({ deliverableId: 'nonexistent' })
+    expect(results).toHaveLength(0)
   })
 })

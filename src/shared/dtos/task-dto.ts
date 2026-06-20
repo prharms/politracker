@@ -48,3 +48,19 @@ export interface NewTaskInput {
   dueDate?: string
   notes?: string
 }
+
+/** Fields that can be updated on a task. */
+export interface UpdateTaskInput {
+  title?: string
+  staffId?: string | null
+  status?: TaskStatus
+  priority?: TaskPriority
+  category?: TaskCategory
+  dueDate?: string | null
+  notes?: string | null
+}
+
+/** Result returned by a delete task operation. */
+export interface DeleteTaskResult {
+  deleted: boolean
+}

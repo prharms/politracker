@@ -21,3 +21,17 @@ export interface NewProjectInput {
   status: ProjectStatus
   notes?: string
 }
+
+/** Fields that can be updated on a project. */
+export interface UpdateProjectInput {
+  name?: string
+  type?: ProjectType
+  status?: ProjectStatus
+  notes?: string
+}
+
+/** Result returned by a delete project operation. */
+export interface DeleteProjectResult {
+  deleted: boolean
+  subjectCount: number
+}

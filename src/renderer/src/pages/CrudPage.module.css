@@ -1,0 +1,254 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 8px 16px;
+  outline: none;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 26px;
+  color: #e8e8e8;
+  background: #000000;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #22c55e;
+  padding-bottom: 4px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: bold;
+  color: #22c55e;
+  letter-spacing: 0.1em;
+}
+
+.hint {
+  font-size: 20px;
+  color: #e8e8e8;
+  letter-spacing: 0.04em;
+}
+
+.error {
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  background: #1a0000;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border: 1px solid #ef4444;
+  color: #e8e8e8;
+  font-size: 24px;
+}
+
+.confirmYes {
+  background: none;
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  font-family: inherit;
+  font-size: 22px;
+  padding: 1px 10px;
+  cursor: pointer;
+}
+
+.confirmNo {
+  background: none;
+  border: 1px solid #e8e8e8;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 22px;
+  padding: 1px 10px;
+  cursor: pointer;
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px;
+  margin-bottom: 6px;
+  border: 1px solid #22c55e;
+}
+
+.addLabel {
+  color: #22c55e;
+  font-size: 22px;
+  white-space: nowrap;
+}
+
+.addInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #22c55e;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 24px;
+  padding: 2px 4px;
+  outline: none;
+  min-width: 20ch;
+  flex: 1;
+}
+
+.addInput::placeholder {
+  color: #444444;
+}
+
+.addSelect {
+  background: #111111;
+  border: 1px solid #22c55e;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 22px;
+  padding: 2px 4px;
+  outline: none;
+}
+
+.addSelect option {
+  background: #111111;
+  color: #e8e8e8;
+}
+
+.addSubmit {
+  background: none;
+  border: 1px solid #22c55e;
+  color: #22c55e;
+  font-family: inherit;
+  font-size: 22px;
+  padding: 1px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Optional filter row - used by pages with list filters */
+
+.filterRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0 6px;
+  flex-wrap: nowrap;
+}
+
+/* Table layout - each page sets grid-template-columns inline */
+
+.tableWrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.colHeader {
+  display: grid;
+  gap: 8px;
+  padding: 3px 8px;
+  font-size: 20px;
+  color: #22c55e;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #222222;
+  margin-bottom: 2px;
+}
+
+.row {
+  display: grid;
+  gap: 8px;
+  padding: 3px 8px;
+  cursor: pointer;
+  border-bottom: 1px solid #0d0d0d;
+  align-items: center;
+}
+
+.row:hover {
+  background: #0a0a0a;
+}
+
+.rowSelected {
+  background: #0d1a0d;
+  border-left: 2px solid #22c55e;
+  padding-left: 6px;
+}
+
+/* Generic cell types */
+
+.cell {
+  overflow: hidden;
+  white-space: nowrap;
+  color: #e8e8e8;
+}
+
+.cellAccent {
+  overflow: hidden;
+  white-space: nowrap;
+  color: #22c55e;
+  cursor: pointer;
+}
+
+.cellMeta {
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 24px;
+  color: #e8e8e8;
+}
+
+.editableCell {
+  overflow: hidden;
+  white-space: nowrap;
+  cursor: pointer;
+  color: #e8e8e8;
+}
+
+/* Status button - clickable toggle */
+
+.statusBtn {
+  background: none;
+  border: 1px solid;
+  font-family: inherit;
+  font-size: 22px;
+  padding: 1px 8px;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+}
+
+.active {
+  border-color: #22c55e;
+  color: #22c55e;
+}
+
+.inactive {
+  border-color: #555555;
+  color: #e8e8e8;
+}
+
+.inlineInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #22c55e;
+  color: #e8e8e8;
+  font-family: inherit;
+  font-size: 26px;
+  padding: 0 2px;
+  outline: none;
+  width: 100%;
+}
+
+.loading {
+  padding: 12px 8px;
+  color: #444444;
+  font-size: 24px;
+}
+
+.empty {
+  padding: 12px 8px;
+  color: #e8e8e8;
+  font-size: 24px;
+}

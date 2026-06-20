@@ -4,14 +4,23 @@ import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
 import type { StaffDto } from '../../../../shared/dtos/staff-dto'
 
 const stubStaff: StaffDto[] = [
-  { id: '1', name: 'Alice', status: 'Active', createdAt: '2026-01-01T00:00:00.000Z' },
-  { id: '2', name: 'Bob', status: 'Active', createdAt: '2026-01-02T00:00:00.000Z' }
+  {
+    id: '1',
+    name: 'Alice',
+    initials: 'A',
+    status: 'Active',
+    createdAt: '2026-01-01T00:00:00.000Z'
+  },
+  { id: '2', name: 'Bob', initials: 'B', status: 'Active', createdAt: '2026-01-02T00:00:00.000Z' }
 ]
 
 const mockRepo: StaffRepositoryPort = {
   listAll: vi.fn().mockReturnValue(stubStaff),
   findById: vi.fn().mockReturnValue(null),
-  create: vi.fn()
+  create: vi.fn(),
+  update: vi.fn(),
+  updateStatus: vi.fn(),
+  delete: vi.fn()
 }
 
 describe('ListStaffUseCase', () => {
