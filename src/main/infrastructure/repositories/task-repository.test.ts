@@ -47,7 +47,7 @@ const newTask = () => ({
   staffId: STAFF_ID,
   title: 'Check campaign finance',
   scope: 'Full Memo' as const,
-  status: 'Inactive' as const,
+  status: 'Active' as const,
   priority: 'Normal' as const,
   dueDate: '2026-11-03'
 })
@@ -87,11 +87,11 @@ describe('TaskRepository', () => {
   })
 
   it('list filters by status', () => {
-    repo.create(newTask())
-    repo.create({ ...newTask(), title: 'In progress task', status: 'In Progress' })
-    const backlog = repo.list({ status: 'Inactive' })
-    expect(backlog.every(t => t.status === 'Inactive')).toBe(true)
-    expect(backlog).toHaveLength(1)
+    repo.create({ ...newTask(), status: 'Inactive' })
+    repo.create({ ...newTask(), title: 'Active task', status: 'Active' })
+    const active = repo.list({ status: 'Active' })
+    expect(active.every(t => t.status === 'Active')).toBe(true)
+    expect(active).toHaveLength(1)
   })
 
   it('findById returns the correct task', () => {
@@ -114,8 +114,8 @@ describe('TaskRepository', () => {
 
   it('updateStatus clears closedAt when status is not closed', () => {
     const created = repo.create(newTask())
-    const updated = repo.updateStatus(created.id, 'In Progress', null)
-    expect(updated.status).toBe('In Progress')
+    const updated = repo.updateStatus(created.id, 'Active', null)
+    expect(updated.status).toBe('Active')
     expect(updated.closedAt).toBeNull()
   })
 

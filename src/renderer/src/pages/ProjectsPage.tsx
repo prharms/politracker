@@ -43,10 +43,13 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
   const [addDueDate, setAddDueDate] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingValue, setEditingValue] = useState('')
+  const [editingDueId, setEditingDueId] = useState<string | null>(null)
+  const [editingDueValue, setEditingDueValue] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const addRef = useRef<HTMLInputElement>(null)
   const editRef = useRef<HTMLInputElement>(null)
+  const editDueRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (showAdd) addRef.current?.focus()
@@ -55,6 +58,10 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
   useEffect(() => {
     if (editingId) editRef.current?.focus()
   }, [editingId])
+
+  useEffect(() => {
+    if (editingDueId) editDueRef.current?.focus()
+  }, [editingDueId])
 
   const submitAdd = useCallback(async () => {
     if (!addName.trim()) {
@@ -80,6 +87,15 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
     await updateSubproject(editingId, { name: editingValue.trim() })
     setEditingId(null)
   }, [editingId, editingValue, updateSubproject])
+
+  const commitDueEdit = useCallback(async () => {
+    if (!editingDueId || !editingDueValue) {
+      setEditingDueId(null)
+      return
+    }
+    await updateSubproject(editingDueId, { dueDate: editingDueValue })
+    setEditingDueId(null)
+  }, [editingDueId, editingDueValue, updateSubproject])
 
   const cycleSubprojectStatus = useCallback(
     async (id: string, current: (typeof SUBPROJECT_STATUSES)[number]) => {
@@ -225,8 +241,36 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
                 >
                   {sub.status}
                 </td>
-                <td style={{ whiteSpace: 'nowrap', ...(overdue ? { color: '#ff3333' } : {}) }}>
-                  {formatDue(due)}
+                <td
+                  className={styles.editableCell}
+                  style={{
+                    whiteSpace: 'nowrap',
+                    cursor: 'pointer',
+                    ...(overdue ? { color: '#ff3333' } : {})
+                  }}
+                  title="Click to edit due date"
+                  onClick={() => {
+                    setEditingDueId(sub.id)
+                    setEditingDueValue(due)
+                  }}
+                >
+                  {editingDueId === sub.id ? (
+                    <input
+                      ref={editDueRef}
+                      type="date"
+                      className={styles.inlineInput}
+                      value={editingDueValue}
+                      onChange={e => setEditingDueValue(e.currentTarget.value)}
+                      onBlur={() => void commitDueEdit()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void commitDueEdit()
+                        if (e.key === 'Escape') setEditingDueId(null)
+                        e.stopPropagation()
+                      }}
+                    />
+                  ) : (
+                    formatDue(due)
+                  )}
                 </td>
                 <td>
                   <button
@@ -360,6 +404,13 @@ export function ProjectsPage() {
   const cycleProjectStatus = useCallback(
     async (id: string, current: (typeof PROJECT_STATUSES)[number]) => {
       await updateProject(id, { status: cycleStatus(current, PROJECT_STATUSES) })
+    },
+    [updateProject]
+  )
+
+  const cycleProjectType = useCallback(
+    async (id: string, current: (typeof PROJECT_TYPES)[number]) => {
+      await updateProject(id, { type: cycleStatus(current, PROJECT_TYPES) })
     },
     [updateProject]
   )
@@ -507,7 +558,16 @@ export function ProjectsPage() {
                       proj.name
                     )}
                   </td>
-                  <td>{proj.type}</td>
+                  <td
+                    style={{ cursor: 'pointer' }}
+                    title="Click to change type"
+                    onClick={e => {
+                      e.stopPropagation()
+                      void cycleProjectType(proj.id, proj.type)
+                    }}
+                  >
+                    {proj.type}
+                  </td>
                   <td
                     className={statusClass(proj.status, styles.active, styles.inactive)}
                     style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -519,8 +579,38 @@ export function ProjectsPage() {
                   >
                     {proj.status}
                   </td>
-                  <td style={{ whiteSpace: 'nowrap', ...(overdue ? { color: '#ff3333' } : {}) }}>
-                    {formatDue(proj.dueDate)}
+                  <td
+                    className={styles.editableCell}
+                    style={{
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      ...(overdue ? { color: '#ff3333' } : {})
+                    }}
+                    title="Click to edit due date"
+                    onClick={e => {
+                      e.stopPropagation()
+                      openEdit(proj.id, 'dueDate', proj.dueDate)
+                    }}
+                  >
+                    {editingField?.id === proj.id && editingField.field === 'dueDate' ? (
+                      <input
+                        ref={editInputRef}
+                        type="date"
+                        className={styles.inlineInput}
+                        value={editingField.value}
+                        onChange={e =>
+                          setEditingField({ ...editingField, value: e.currentTarget.value })
+                        }
+                        onBlur={() => void commitEdit()}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') void commitEdit()
+                          if (e.key === 'Escape') setEditingField(null)
+                          e.stopPropagation()
+                        }}
+                      />
+                    ) : (
+                      formatDue(proj.dueDate)
+                    )}
                   </td>
                 </tr>
               )

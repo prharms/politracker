@@ -4,13 +4,37 @@ import { useTasks } from '../../hooks/use-tasks'
 import { useFilterOptions } from '../../hooks/use-filter-options'
 import { useSubprojects } from '../../hooks/use-subprojects'
 import { formatDue, isOverdue } from '../../../shared/utils/days-until'
-import type { TaskDto, TaskListFilters } from '../../../shared/dtos/task-dto'
+import type { TaskDto, TaskListFilters, UpdateTaskInput } from '../../../shared/dtos/task-dto'
 import { TASK_SCOPES, TASK_PRIORITIES, TASK_STATUSES } from '../../../shared/constants'
 import type { TaskScope, TaskPriority } from '../../../shared/constants'
 
 /** Return the staff member's name, or a placeholder if unassigned. */
 function staffLabel(name: string | null): string {
   return name ?? '-'
+}
+
+/** Advance to the next value in a cycle list. */
+function cycleStatus<T extends string>(current: T, values: readonly T[]): T {
+  const idx = values.indexOf(current)
+  return values[(idx + 1) % values.length]!
+}
+
+/** Return a red color style for urgent items, or undefined. */
+function urgentStyle(urgent: boolean): React.CSSProperties | undefined {
+  return urgent ? { color: '#ff3333' } : undefined
+}
+
+/** Return a red color style for overdue items, or undefined. */
+function overdueStyle(overdue: boolean): React.CSSProperties | undefined {
+  return overdue ? { color: '#ff3333' } : undefined
+}
+
+/** Build the combined project/subproject label for a task. */
+function taskProjectLabel(task: TaskDto): string {
+  if (task.subprojectName && task.subprojectName !== 'None') {
+    return `${task.projectName}/${task.subprojectName}`
+  }
+  return task.projectName
 }
 
 /** Renders loading indicator or empty-state message for the task table. */
@@ -28,31 +52,176 @@ interface ConfirmDelete {
 interface TaskItemProps {
   task: TaskDto
   selected: boolean
+  staffOptions: { id: string; name: string }[]
   onSelect: () => void
+  onUpdate: (id: string, input: UpdateTaskInput) => Promise<TaskDto>
 }
 
-/** A single task row rendered inside the task table body. */
-function TaskItem({ task, selected, onSelect }: TaskItemProps) {
+/** A single task row with inline editing for all fields. */
+function TaskItem({ task, selected, staffOptions, onSelect, onUpdate }: TaskItemProps) {
+  const [editField, setEditField] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState('')
+
   const closed = task.status === 'Complete'
   const urgent = task.priority === 'Urgent' && !closed
   const overdue = !closed && isOverdue(task.dueDate)
-  const project =
-    task.subprojectName && task.subprojectName !== 'None'
-      ? `${task.projectName}/${task.subprojectName}`
-      : task.projectName
+  const project = taskProjectLabel(task)
+
+  const startEdit = useCallback((field: string, value: string) => {
+    setEditField(field)
+    setEditValue(value)
+  }, [])
+
+  const cancelEdit = useCallback(() => {
+    setEditField(null)
+  }, [])
+
+  const commitEdit = useCallback(async () => {
+    if (!editField || !editValue.trim()) {
+      setEditField(null)
+      return
+    }
+    if (editField === 'title') {
+      await onUpdate(task.id, { title: editValue.trim() })
+    } else {
+      await onUpdate(task.id, { dueDate: editValue })
+    }
+    setEditField(null)
+  }, [editField, editValue, task.id, onUpdate])
+
+  const cycleField = useCallback(
+    async (field: 'scope' | 'status' | 'priority') => {
+      if (field === 'scope') {
+        await onUpdate(task.id, { scope: cycleStatus(task.scope, TASK_SCOPES) })
+      } else if (field === 'priority') {
+        await onUpdate(task.id, { priority: cycleStatus(task.priority, TASK_PRIORITIES) })
+      } else {
+        await onUpdate(task.id, { status: cycleStatus(task.status, TASK_STATUSES) })
+      }
+    },
+    [task, onUpdate]
+  )
+
   return (
     <tr
       className={selected ? styles.rowSelected : ''}
       style={{ opacity: closed ? 0.45 : 1 }}
       onClick={onSelect}
     >
-      <td style={urgent ? { color: '#ff3333' } : undefined}>{task.title}</td>
+      <td
+        className={styles.editableCell}
+        style={urgentStyle(urgent)}
+        title="Click to edit title"
+        onClick={e => {
+          e.stopPropagation()
+          startEdit('title', task.title)
+        }}
+      >
+        {editField === 'title' ? (
+          <input
+            autoFocus
+            className={styles.inlineInput}
+            value={editValue}
+            onChange={e => setEditValue(e.currentTarget.value)}
+            onBlur={() => void commitEdit()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') void commitEdit()
+              if (e.key === 'Escape') cancelEdit()
+              e.stopPropagation()
+            }}
+          />
+        ) : (
+          task.title
+        )}
+      </td>
       <td>{project}</td>
-      <td>{task.scope}</td>
-      <td>{task.status}</td>
-      <td style={urgent ? { color: '#ff3333' } : undefined}>{task.priority}</td>
-      <td>{staffLabel(task.staffName)}</td>
-      <td style={overdue ? { color: '#ff3333' } : undefined}>{formatDue(task.dueDate)}</td>
+      <td
+        style={{ cursor: 'pointer' }}
+        title="Click to change scope"
+        onClick={e => {
+          e.stopPropagation()
+          void cycleField('scope')
+        }}
+      >
+        {task.scope}
+      </td>
+      <td
+        style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
+        title="Click to change status"
+        onClick={e => {
+          e.stopPropagation()
+          void cycleField('status')
+        }}
+      >
+        {task.status}
+      </td>
+      <td
+        style={{ ...urgentStyle(urgent), cursor: 'pointer' }}
+        title="Click to change priority"
+        onClick={e => {
+          e.stopPropagation()
+          void cycleField('priority')
+        }}
+      >
+        {task.priority}
+      </td>
+      <td
+        className={styles.editableCell}
+        title="Click to change staff"
+        onClick={e => {
+          e.stopPropagation()
+          startEdit('staffId', task.staffId ?? '')
+        }}
+      >
+        {editField === 'staffId' ? (
+          <select
+            autoFocus
+            className={styles.addSelect}
+            value={editValue}
+            onChange={e => {
+              void onUpdate(task.id, { staffId: e.currentTarget.value || null })
+              setEditField(null)
+            }}
+            onBlur={cancelEdit}
+          >
+            <option value="">-- unassigned --</option>
+            {staffOptions.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        ) : (
+          staffLabel(task.staffName)
+        )}
+      </td>
+      <td
+        className={styles.editableCell}
+        style={overdueStyle(overdue)}
+        title="Click to edit due date"
+        onClick={e => {
+          e.stopPropagation()
+          startEdit('dueDate', task.dueDate)
+        }}
+      >
+        {editField === 'dueDate' ? (
+          <input
+            autoFocus
+            type="date"
+            className={styles.inlineInput}
+            value={editValue}
+            onChange={e => setEditValue(e.currentTarget.value)}
+            onBlur={() => void commitEdit()}
+            onKeyDown={e => {
+              if (e.key === 'Enter') void commitEdit()
+              if (e.key === 'Escape') cancelEdit()
+              e.stopPropagation()
+            }}
+          />
+        ) : (
+          formatDue(task.dueDate)
+        )}
+      </td>
     </tr>
   )
 }
@@ -204,7 +373,7 @@ function AddTaskForm({
 /** Task list page with full CRUD, keyboard navigation, and compact filters. */
 export function TaskListPage() {
   const [filters, setFilters] = useState<TaskListFilters>({})
-  const { tasks, loading, createTask, deleteTask } = useTasks(filters)
+  const { tasks, loading, createTask, updateTask, deleteTask } = useTasks(filters)
   const { staff, projects } = useFilterOptions()
   const [selectedIdx, setSelectedIdx] = useState(0)
   const [showAll, setShowAll] = useState(false)
@@ -283,7 +452,7 @@ export function TaskListPage() {
       staffId: addStaffId || undefined,
       title: addTitle.trim(),
       scope: addScope,
-      status: 'Inactive',
+      status: 'Active',
       priority: addPriority,
       dueDate: addDueDate
     })
@@ -467,7 +636,9 @@ export function TaskListPage() {
                   key={task.id}
                   task={task}
                   selected={idx === selectedIdx && !showAdd}
+                  staffOptions={staff}
                   onSelect={() => setSelectedIdx(idx)}
+                  onUpdate={updateTask}
                 />
               ))}
           </tbody>
