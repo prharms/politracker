@@ -25,7 +25,7 @@ export const DELIVERABLE_STATUSES = ['Draft', 'In Review', 'Final'] as const
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number]
 
 /** Valid task statuses. */
-export const TASK_STATUSES = ['Inactive', 'In Progress', 'Review', 'Complete'] as const
+export const TASK_STATUSES = ['Active', 'Complete', 'Inactive'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
 
 /** Valid subproject statuses. */
