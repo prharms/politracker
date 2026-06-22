@@ -2,6 +2,7 @@ import { eq, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
 import { projects, tasks } from '../db/schema'
+import { ProjectNotFoundError } from '../../domain/errors'
 import type { ProjectRepositoryPort } from '../../application/ports/project-repository-port'
 import type {
   ProjectDto,
@@ -77,7 +78,7 @@ export class ProjectRepository implements ProjectRepositoryPort {
   /** Update a project and return the updated record. */
   update(id: string, input: UpdateProjectInput): ProjectDto {
     const current = this.findById(id)
-    if (!current) throw new Error(`Project record not found: ${id}`)
+    if (!current) throw new ProjectNotFoundError(id)
     const now = new Date().toISOString()
     this.db
       .update(projects)

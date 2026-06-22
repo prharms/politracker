@@ -1,6 +1,8 @@
 import { eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { subprojects, tasks } from '../db/schema'
+import { SubprojectNotFoundError } from '../../domain/errors'
+import { DEFAULT_SUBPROJECT_STATUS } from '../../domain/subproject'
 import type { SubprojectRepositoryPort } from '../../application/ports/subproject-repository-port'
 import type {
   SubprojectDto,
@@ -43,7 +45,7 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
       id: randomUUID(),
       projectId: input.projectId,
       name: input.name,
-      status: input.status ?? 'Active',
+      status: input.status ?? DEFAULT_SUBPROJECT_STATUS,
       dueDate: input.dueDate ?? null,
       createdAt: now
     }
@@ -56,7 +58,7 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
     const current = this.db.select().from(subprojects).where(eq(subprojects.id, id)).get() as
       | SubprojectRow
       | undefined
-    if (!current) throw new Error(`Subproject ${id} not found`)
+    if (!current) throw new SubprojectNotFoundError(id)
     this.db
       .update(subprojects)
       .set({

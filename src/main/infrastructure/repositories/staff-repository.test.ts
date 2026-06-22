@@ -69,7 +69,9 @@ describe('StaffRepository', () => {
   })
 
   it('update throws when record does not exist', () => {
-    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow('Staff record not found')
+    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow(
+      'Staff member not found: nonexistent'
+    )
   })
 
   it('updateStatus changes the status of the given record', () => {

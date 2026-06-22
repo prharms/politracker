@@ -51,32 +51,154 @@ branching threshold. Never commit new logic directly to `main`.
 
 ---
 
-## Implementation order - follow this sequence
+## Implementation order - follow this sequence exactly
 
 Build in this order. Each step imports only from steps that came before it.
+**Domain comes first. There are no exceptions to this ordering.**
 
 ```
-Step 1 -> Port interface     src/main/application/ports/
-Step 2 -> Domain entity      src/main/domain/           (skip if exists)
-Step 3 -> Repository         src/main/infrastructure/repositories/
-Step 4 -> DTO                src/main/application/dtos/ (skip if exists)
-Step 5 -> Use case           src/main/application/use-cases/
-Step 6 -> Container          src/main/container.ts
-Step 7 -> IPC handler        src/main/ipc/handlers/
-Step 8 -> IPC registration   src/main/ipc/index.ts + src/preload/index.ts
-Step 9 -> Renderer hook/API  src/renderer/api/ + src/renderer/hooks/
-Step 10 -> Write tests
+Step 1 -> Domain entity      src/main/domain/           MANDATORY - never skip
+Step 2 -> Domain errors      src/main/domain/errors.ts  MANDATORY - add at minimum a NotFound error
+Step 3 -> DTO                src/shared/dtos/           (skip only if exists and covers this entity)
+Step 4 -> Port interface     src/main/application/ports/
+Step 5 -> Repository         src/main/infrastructure/repositories/
+Step 6 -> Use case           src/main/application/use-cases/
+Step 7 -> Container          src/main/container.ts
+Step 8 -> IPC handler        src/main/ipc/handlers/
+Step 9 -> IPC registration   src/main/ipc/index.ts + src/preload/index.ts
+Step 10 -> Renderer hook/API src/renderer/api/ + src/renderer/hooks/
+Step 11 -> Write tests
+```
+
+### Domain checklist (must complete before Step 4)
+
+Before writing the port interface, verify:
+
+- [ ] `src/main/domain/[entity].ts` exists and declares the entity interface
+- [ ] The entity interface contains ONLY the entity's own properties (no joined names, no display fields)
+- [ ] All business rules that govern state changes (closedAt stamping, derived defaults, invariants) are expressed as pure functions in the domain file
+- [ ] `src/main/domain/errors.ts` contains at least `[Entity]NotFoundError`
+- [ ] The domain file is re-exported from `src/main/domain/index.ts`
+- [ ] No `throw new Error(...)` exists in any infrastructure file for this entity - only typed domain errors
+
+---
+
+## Step 1 - Domain entity (MANDATORY)
+
+**File:** `src/main/domain/[entity].ts`
+
+Domain entities are pure TypeScript interfaces with business rule functions.
+They describe the business concept, not the database shape and not the
+presentation shape. No joined fields. No display-only fields.
+
+```typescript
+import type { StaffStatus } from '../../shared/constants'
+
+/** Domain entity representing a staff member. */
+export interface Staff {
+  readonly id: string
+  readonly name: string
+  readonly initials: string
+  readonly status: StaffStatus
+  readonly createdAt: string
+}
+
+/**
+ * Resolve staff initials: use the provided value if given,
+ * otherwise derive from the name.
+ */
+export function resolveStaffInitials(name: string, provided?: string): string {
+  if (provided) return provided
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0]?.toUpperCase() ?? '')
+    .join('')
+    .slice(0, 3)
+}
+
+/** Validate that a staff name is non-empty. */
+export function validateStaffName(name: string): void {
+  if (!name.trim()) throw new Error('Staff name must not be empty')
+}
+```
+
+**Import rules:**
+- May import from: `src/shared/`, Node.js stdlib
+- Must NOT import from: `application`, `infrastructure`, `ipc`, `renderer`
+
+---
+
+## Step 2 - Domain errors (MANDATORY)
+
+**File:** `src/main/domain/errors.ts`
+
+Every entity needs at minimum a `[Entity]NotFoundError`. Add additional errors
+for each invariant that can be violated (delete guards, status rules, etc).
+
+```typescript
+/** Domain error: a staff member with the given id does not exist. */
+export class StaffNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Staff member not found: ${id}`)
+    this.name = 'StaffNotFoundError'
+  }
+}
+```
+
+Repositories **must** throw these typed errors instead of `throw new Error(...)`:
+
+```typescript
+// WRONG
+throw new Error(`Staff record not found: ${id}`)
+
+// CORRECT
+import { StaffNotFoundError } from '../../domain/errors'
+throw new StaffNotFoundError(id)
+```
+
+**Import rules:**
+- No imports needed for simple error classes (they extend Error)
+- May import from: `src/shared/` if needed
+
+---
+
+## Step 3 - DTO
+
+**File:** `src/shared/dtos/[entity]-dto.ts`
+
+DTOs are the objects that cross the application-to-presentation boundary.
+They are also what IPC sends over the wire. DTOs may include joined/display
+data that domain entities do not carry.
+
+```typescript
+/** Presentation-safe view of a staff record. */
+export interface StaffDto {
+  id: string
+  name: string
+  initials: string
+  status: 'Active' | 'Inactive'
+  createdAt: string
+}
+
+/** Fields required to create a new staff record. */
+export interface NewStaffInput {
+  name: string
+  initials?: string
+  status: 'Active' | 'Inactive'
+}
 ```
 
 ---
 
-## Step 1 - Port interface
+## Step 4 - Port interface
 
 **File:** `src/main/application/ports/[entity]-repository-port.ts`
 
 ```typescript
-/** Repository port for [entity] persistence. */
+import type { StaffDto, NewStaffInput, UpdateStaffInput } from '../../../shared/dtos/staff-dto'
 
+/** Repository port for staff persistence. */
 export interface StaffRepositoryPort {
   /** Return all staff records ordered by name. */
   listAll(): StaffDto[]
@@ -88,135 +210,90 @@ export interface StaffRepositoryPort {
   create(input: NewStaffInput): StaffDto
 
   /** Update an existing staff record and return the updated version. */
-  update(id: string, input: Partial<NewStaffInput>): StaffDto
+  update(id: string, input: UpdateStaffInput): StaffDto
 }
 ```
 
 **Import rules:**
-- May import from: `src/main/application/dtos/`, `src/shared/`
+- May import from: `src/shared/`, `src/main/domain/`
 - Must NOT import from: `infrastructure`, `ipc`, `renderer`
 
 ---
 
-## Step 2 - Domain entity (if new)
-
-**File:** `src/main/domain/[entity].ts`
-
-Domain entities are plain TypeScript interfaces or classes with validation.
-They describe the business concept, not the database shape.
-
-```typescript
-/** Domain entity representing a staff member. */
-
-export interface Staff {
-  readonly id: string
-  readonly name: string
-  readonly status: 'Active' | 'Inactive'
-  readonly createdAt: string
-}
-
-/** Validates that a staff name is non-empty. */
-export function validateStaffName(name: string): void {
-  if (!name.trim()) {
-    throw new Error('Staff name must not be empty')
-  }
-}
-```
-
-**Import rules:**
-- May import from: `src/shared/`, Node.js stdlib
-- Must NOT import from: `application`, `infrastructure`, `ipc`, `renderer`
-
----
-
-## Step 3 - Repository (infrastructure)
+## Step 5 - Repository (infrastructure)
 
 **File:** `src/main/infrastructure/repositories/[entity]-repository.ts`
 
-```typescript
-/** Infrastructure adapter: Drizzle repository for staff. */
+The repository imports domain errors and domain functions. It never re-invents
+business logic inline.
 
+```typescript
 import { eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
 import { staff } from '../db/schema'
+import { StaffNotFoundError } from '../../domain/errors'
+import { resolveStaffInitials } from '../../domain/staff'
 import type { StaffRepositoryPort } from '../../application/ports/staff-repository-port'
-import type { StaffDto, NewStaffInput } from '../../application/dtos/staff-dto'
+import type { StaffDto, NewStaffInput, UpdateStaffInput } from '../../../shared/dtos/staff-dto'
 
 /** Drizzle-backed repository implementing StaffRepositoryPort. */
 export class StaffRepository implements StaffRepositoryPort {
-  constructor(private db: BetterSQLite3Database) {}
+  /** Construct with a Drizzle database instance. */
+  constructor(private readonly db: BetterSQLite3Database) {}
 
   /** Return all staff records ordered by name. */
   listAll(): StaffDto[] {
-    return this.db.select().from(staff).orderBy(staff.name).all()
+    return this.db.select().from(staff).orderBy(staff.name).all() as StaffDto[]
   }
 
   /** Return a single staff record by id, or null if not found. */
   findById(id: string): StaffDto | null {
     const result = this.db.select().from(staff).where(eq(staff.id, id)).get()
-    return result ?? null
+    return (result as StaffDto) ?? null
   }
 
   /** Persist a new staff record and return it. */
   create(input: NewStaffInput): StaffDto {
-    const now = new Date().toISOString()
-    const record = { id: randomUUID(), ...input, createdAt: now }
+    const record: StaffDto = {
+      id: randomUUID(),
+      name: input.name,
+      initials: resolveStaffInitials(input.name, input.initials),
+      status: input.status,
+      createdAt: new Date().toISOString()
+    }
     this.db.insert(staff).values(record).run()
     return record
   }
 
-  /** Update an existing staff record and return the updated version. */
-  update(id: string, input: Partial<NewStaffInput>): StaffDto {
-    const now = new Date().toISOString()
-    this.db.update(staff).set({ ...input, updatedAt: now }).where(eq(staff.id, id)).run()
-    return this.findById(id)!
+  /** Update a staff record and return the updated version. */
+  update(id: string, input: UpdateStaffInput): StaffDto {
+    const current = this.findById(id)
+    if (!current) throw new StaffNotFoundError(id)
+    const name = input.name ?? current.name
+    const initials = resolveStaffInitials(name, input.initials ?? current.initials)
+    this.db.update(staff).set({ name, initials }).where(eq(staff.id, id)).run()
+    return { ...current, name, initials }
   }
 }
 ```
 
 **Import rules:**
-- May import from: `domain`, `application/ports`, `application/dtos`, `shared`
+- May import from: `domain`, `application/ports`, `shared`
 - Must NOT import from: `ipc`, `renderer`, `container`
-- The class may implement a port interface but must not extend it
-  (TypeScript uses structural typing - matching method signatures is enough)
+- ALWAYS use typed domain errors - never `throw new Error(...)`
+- ALWAYS call domain functions for business rules - never re-implement inline
 
 ---
 
-## Step 4 - DTO
-
-**File:** `src/main/application/dtos/[entity]-dto.ts`
-
-DTOs are the objects that cross the application-to-presentation boundary.
-They are also what IPC sends over the wire (plain JSON-serializable objects).
-
-```typescript
-/** DTO and input types for the staff entity. */
-
-/** Presentation-safe view of a staff record. */
-export interface StaffDto {
-  id: string
-  name: string
-  status: 'Active' | 'Inactive'
-  createdAt: string
-}
-
-/** Fields required to create a new staff record. */
-export interface NewStaffInput {
-  name: string
-  status: 'Active' | 'Inactive'
-}
-```
-
-DTOs live in `application/dtos/` and can be imported by both `application`
-and `infrastructure` layers. They are also re-exported from `src/shared/`
-if the renderer needs them (via IPC types).
-
----
-
-## Step 5 - Use case
+## Step 6 - Use case
 
 **File:** `src/main/application/use-cases/[entity]/[action]-[entity]-use-case.ts`
+
+Use cases receive port interfaces, call them, and return DTOs. They do not
+contain business logic - that belongs in domain.
+
+
 
 ```typescript
 /** Use case: list all staff members. */
@@ -250,7 +327,7 @@ export class ListStaffUseCase {
 
 ---
 
-## Step 6 - Wire the container
+## Step 7 - Wire the container
 
 **File:** `src/main/container.ts`
 
@@ -287,7 +364,7 @@ imported in `container.ts` and nowhere else outside `infrastructure/`.
 
 ---
 
-## Step 7 - IPC handler
+## Step 8 - IPC handler
 
 **File:** `src/main/ipc/handlers/[entity]-handlers.ts`
 
@@ -321,7 +398,7 @@ export function registerStaffHandlers(db: BetterSQLite3Database): void {
 
 ---
 
-## Step 8 - Register handlers + expose via preload
+## Step 9 - Register handlers + expose via preload
 
 **`src/main/ipc/index.ts`** - call all register functions at startup:
 
@@ -350,7 +427,7 @@ contextBridge.exposeInMainWorld('api', {
 
 ---
 
-## Step 9 - Renderer API wrapper and hook
+## Step 10 - Renderer API wrapper and hook
 
 **`src/renderer/api/staff-api.ts`** - typed wrapper over `window.api`:
 
@@ -389,7 +466,7 @@ export function useStaff(): { staff: StaffDto[]; loading: boolean } {
 
 ---
 
-## Step 10 - Write tests
+## Step 11 - Write tests
 
 Two test files are required. Both must exist before the task is done.
 Coverage below 80% for `src/main/` fails `./make.ps1 test`.
@@ -447,7 +524,7 @@ describe('registerStaffHandlers', () => {
 
 ```powershell
 cd c:\Projects\prhrt\politicket; npx vitest run src/main/application/use-cases/staff/ -v
-./make.ps1 test
+./make.ps1 ci
 ```
 
 ---

@@ -2,9 +2,10 @@ import { eq } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
 import { staff } from '../db/schema'
+import { StaffNotFoundError } from '../../domain/errors'
+import { resolveStaffInitials } from '../../domain/staff'
 import type { StaffRepositoryPort } from '../../application/ports/staff-repository-port'
 import type { StaffDto, NewStaffInput, UpdateStaffInput } from '../../../shared/dtos/staff-dto'
-import { deriveInitials } from '../../../shared/utils/derive-initials'
 
 /** Drizzle-backed repository implementing StaffRepositoryPort. */
 export class StaffRepository implements StaffRepositoryPort {
@@ -27,7 +28,7 @@ export class StaffRepository implements StaffRepositoryPort {
     const record: StaffDto = {
       id: randomUUID(),
       name: input.name,
-      initials: input.initials ?? deriveInitials(input.name),
+      initials: resolveStaffInitials(input.name, input.initials),
       status: input.status,
       createdAt: new Date().toISOString()
     }
@@ -38,9 +39,12 @@ export class StaffRepository implements StaffRepositoryPort {
   /** Update a staff member's name and/or initials and return the updated record. */
   update(id: string, input: UpdateStaffInput): StaffDto {
     const current = this.findById(id)
-    if (!current) throw new Error(`Staff record not found: ${id}`)
+    if (!current) throw new StaffNotFoundError(id)
     const name = input.name ?? current.name
-    const initials = input.initials ?? (input.name ? deriveInitials(input.name) : current.initials)
+    // If name changed and no explicit initials provided, re-derive from the new name.
+    // If name did not change, preserve existing initials unless explicitly overridden.
+    const existingInitials = input.name ? undefined : current.initials
+    const initials = resolveStaffInitials(name, input.initials ?? existingInitials)
     this.db.update(staff).set({ name, initials }).where(eq(staff.id, id)).run()
     return { ...current, name, initials }
   }
@@ -49,7 +53,7 @@ export class StaffRepository implements StaffRepositoryPort {
   updateStatus(id: string, status: 'Active' | 'Inactive'): StaffDto {
     this.db.update(staff).set({ status }).where(eq(staff.id, id)).run()
     const updated = this.findById(id)
-    if (!updated) throw new Error(`Staff record not found: ${id}`)
+    if (!updated) throw new StaffNotFoundError(id)
     return updated
   }
 

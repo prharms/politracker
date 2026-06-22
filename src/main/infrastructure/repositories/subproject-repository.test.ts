@@ -81,7 +81,7 @@ describe('SubprojectRepository', () => {
 
   it('update throws when record does not exist', () => {
     expect(() => repo.update('nonexistent', { name: 'X' })).toThrow(
-      'Subproject nonexistent not found'
+      'Subproject not found: nonexistent'
     )
   })
 

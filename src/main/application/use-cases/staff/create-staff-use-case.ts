@@ -1,3 +1,4 @@
+import { validateStaffName } from '../../../domain/staff'
 import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
 import type { StaffDto, NewStaffInput } from '../../../../shared/dtos/staff-dto'
 
@@ -8,9 +9,7 @@ export class CreateStaffUseCase {
 
   /** Validate input, persist a new staff record, and return it. */
   execute(input: NewStaffInput): StaffDto {
-    if (!input.name.trim()) {
-      throw new Error('Staff name must not be empty')
-    }
+    validateStaffName(input.name)
     return this.repo.create(input)
   }
 }
