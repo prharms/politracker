@@ -1,56 +1,33 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-/** Clients - the organizations or individuals who hire the firm. */
-export const clients = sqliteTable('clients', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  createdAt: text('created_at').notNull()
-})
-
-/** Projects - the top-level engagement, linked to a client. */
+/** Projects - the top-level engagement. Client information is kept off-system. */
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
-  clientId: text('client_id')
-    .notNull()
-    .references(() => clients.id),
   name: text('name').notNull(),
   type: text('type').notNull(), // ProjectType
   status: text('status').notNull(), // ProjectStatus
+  dueDate: text('due_date').notNull(),
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })
 
 /**
- * Project groups - optional intermediate level within a project.
- * Used as contests for Candidate Campaigns and bills/issues for Legislative Advocacy.
+ * Subprojects - optional intermediate level within a project.
+ * Used for contests (Candidate Campaigns), bills/issues (Legislative Advocacy),
+ * or any finer-grained grouping within a project.
+ * The auto-created default subproject is named "None" and has a null due_date,
+ * which inherits the parent project's due date at display time.
  */
-export const projectGroups = sqliteTable('project_groups', {
+export const subprojects = sqliteTable('subprojects', {
   id: text('id').primaryKey(),
   projectId: text('project_id')
     .notNull()
     .references(() => projects.id),
   name: text('name').notNull(),
+  status: text('status').notNull().default('Active'), // SubprojectStatus
+  dueDate: text('due_date'), // null for default "None" subproject - inherits from parent project
   createdAt: text('created_at').notNull()
-})
-
-/**
- * Subjects - the research targets.
- * Candidates, legislators, organizations, individuals, or ballot measures.
- */
-export const subjects = sqliteTable('subjects', {
-  id: text('id').primaryKey(),
-  projectId: text('project_id')
-    .notNull()
-    .references(() => projects.id),
-  groupId: text('group_id').references(() => projectGroups.id),
-  name: text('name').notNull(),
-  type: text('type').notNull(), // SubjectType
-  role: text('role'),
-  status: text('status').notNull(), // SubjectStatus
-  notes: text('notes'),
-  createdAt: text('created_at').notNull(),
-  updatedAt: text('updated_at').notNull()
 })
 
 /** Staff - the researchers and writers on the team. */
@@ -64,8 +41,8 @@ export const staff = sqliteTable('staff', {
 
 /**
  * Deliverables - the final work products: Reports, Memos, and Other.
- * Can be scoped to the whole project, a project group, or a specific subject.
- * Supports nesting via parent_deliverable_id (e.g. memos that roll up into a report).
+ * Scoped to the whole project or an optional subproject.
+ * Supports nesting via parent_deliverable_id.
  */
 export const deliverables = sqliteTable('deliverables', {
   id: text('id').primaryKey(),
@@ -73,8 +50,7 @@ export const deliverables = sqliteTable('deliverables', {
     .notNull()
     .references(() => projects.id),
   parentDeliverableId: text('parent_deliverable_id'),
-  groupId: text('group_id').references(() => projectGroups.id),
-  subjectId: text('subject_id').references(() => subjects.id),
+  subprojectId: text('subproject_id').references(() => subprojects.id),
   staffId: text('staff_id').references(() => staff.id),
   type: text('type').notNull(), // DeliverableType
   title: text('title').notNull(),
@@ -86,43 +62,36 @@ export const deliverables = sqliteTable('deliverables', {
 })
 
 /**
- * Tasks - the atomic unit of work.
- * task_type = Research: a research assignment against a subject.
- * task_type = Document: a writing assignment that IS a document in a deliverable.
- * All documents are tasks; not all tasks are documents.
+ * Tasks - the atomic unit of work assigned to a project.
+ * Must be scoped to a subproject (every project has a default "None" subproject).
+ * Optionally assigned to a staff member.
+ * Due date is required on all tasks.
  */
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
-  subjectId: text('subject_id')
+  projectId: text('project_id')
     .notNull()
-    .references(() => subjects.id),
+    .references(() => projects.id),
+  subprojectId: text('subproject_id')
+    .notNull()
+    .references(() => subprojects.id),
   staffId: text('staff_id').references(() => staff.id),
-  taskType: text('task_type').notNull(), // TaskType
-  deliverableId: text('deliverable_id').references(() => deliverables.id),
-  parentDocumentId: text('parent_document_id'), // self-referential FK to tasks.id
-  sortOrder: integer('sort_order'),
   title: text('title').notNull(),
-  category: text('category').notNull(), // TaskCategory
+  scope: text('scope').notNull(), // TaskScope
   status: text('status').notNull(), // TaskStatus
   priority: text('priority').notNull(), // TaskPriority
-  dueDate: text('due_date'),
+  dueDate: text('due_date').notNull(),
   notes: text('notes'),
   closedAt: text('closed_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })
 
-export type Client = typeof clients.$inferSelect
-export type NewClient = typeof clients.$inferInsert
-
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert
 
-export type ProjectGroup = typeof projectGroups.$inferSelect
-export type NewProjectGroup = typeof projectGroups.$inferInsert
-
-export type Subject = typeof subjects.$inferSelect
-export type NewSubject = typeof subjects.$inferInsert
+export type Subproject = typeof subprojects.$inferSelect
+export type NewSubproject = typeof subprojects.$inferInsert
 
 export type Staff = typeof staff.$inferSelect
 export type NewStaff = typeof staff.$inferInsert

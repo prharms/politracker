@@ -1,5 +1,6 @@
 import React from 'react'
 import styles from './FilterBar.module.css'
+import { TASK_STATUSES } from '../../../shared/constants'
 import type { StaffDto } from '../../../shared/dtos/staff-dto'
 import type { ProjectDto } from '../../../shared/dtos/project-dto'
 import type { TaskListFilters } from '../../../shared/dtos/task-dto'
@@ -67,13 +68,11 @@ export function FilterBar({
           onChange={e => handleChange('status', e.target.value)}
         >
           <option value="">ALL</option>
-          <option value="Backlog">BACKLOG</option>
-          <option value="In Progress">IN PROGRESS</option>
-          <option value="Review">REVIEW</option>
-          <option value="Draft">DRAFT</option>
-          <option value="In Review">IN REVIEW</option>
-          <option value="Closed">CLOSED</option>
-          <option value="Final">FINAL</option>
+          {TASK_STATUSES.map(s => (
+            <option key={s} value={s}>
+              {s.toUpperCase()}
+            </option>
+          ))}
         </select>
       </div>
 

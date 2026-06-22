@@ -204,99 +204,95 @@ export function StaffPage() {
       )}
 
       <div className={styles.tableWrap}>
-        <div className={styles.colHeader} style={{ gridTemplateColumns: '6ch 1fr 10ch 8ch' }}>
-          <span>INIT</span>
-          <span>NAME</span>
-          <span>STATUS</span>
-          <span>SINCE</span>
-        </div>
-
         {loading && <div className={styles.loading}>LOADING...</div>}
-
         {!loading && staff.length === 0 && (
           <div className={styles.empty}>NO STAFF - PRESS [A] TO ADD</div>
         )}
-
-        {staff.map((member, idx) => {
-          const isSelected = idx === selectedIdx && !showAdd
-          return (
-            <div
-              key={member.id}
-              className={`${styles.row} ${isSelected ? styles.rowSelected : ''}`}
-              style={{ gridTemplateColumns: '6ch 1fr 10ch 8ch' }}
-              onClick={() => setSelectedIdx(idx)}
-            >
-              <span
-                className={styles.cellAccent}
-                title="Click to edit initials"
-                onClick={e => {
-                  e.stopPropagation()
-                  setSelectedIdx(idx)
-                  openEdit(member.id, 'initials', member.initials)
-                }}
+        <table className={styles.dataTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '6ch' }}>INIT</th>
+              <th>NAME</th>
+              <th style={{ width: '10ch' }}>STATUS</th>
+              <th style={{ width: '8ch' }}>SINCE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {staff.map((member, idx) => (
+              <tr
+                key={member.id}
+                className={idx === selectedIdx && !showAdd ? styles.rowSelected : ''}
+                onClick={() => setSelectedIdx(idx)}
               >
-                {editing?.id === member.id && editing.field === 'initials' ? (
-                  <input
-                    ref={editInputRef}
-                    className={styles.inlineInput}
-                    value={editing.value}
-                    onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
-                    onBlur={() => void commitEdit()}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') void commitEdit()
-                      if (e.key === 'Escape') setEditing(null)
-                      e.stopPropagation()
-                    }}
-                    style={{ width: '5ch' }}
-                  />
-                ) : (
-                  member.initials
-                )}
-              </span>
-
-              <span
-                className={styles.editableCell}
-                title="Click to edit name"
-                onClick={e => {
-                  e.stopPropagation()
-                  setSelectedIdx(idx)
-                  openEdit(member.id, 'name', member.name)
-                }}
-              >
-                {editing?.id === member.id && editing.field === 'name' ? (
-                  <input
-                    ref={editInputRef}
-                    className={styles.inlineInput}
-                    value={editing.value}
-                    onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
-                    onBlur={() => void commitEdit()}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') void commitEdit()
-                      if (e.key === 'Escape') setEditing(null)
-                      e.stopPropagation()
-                    }}
-                  />
-                ) : (
-                  member.name
-                )}
-              </span>
-
-              <span>
-                <button
-                  className={`${styles.statusBtn} ${member.status === 'Active' ? styles.active : styles.inactive}`}
+                <td
+                  className={styles.cellAccent}
+                  title="Click to edit initials"
                   onClick={e => {
                     e.stopPropagation()
-                    void toggleStatus(member.id, member.status)
+                    setSelectedIdx(idx)
+                    openEdit(member.id, 'initials', member.initials)
                   }}
                 >
-                  {member.status}
-                </button>
-              </span>
-
-              <span className={styles.cellMeta}>{elapsed(member.createdAt)}</span>
-            </div>
-          )
-        })}
+                  {editing?.id === member.id && editing.field === 'initials' ? (
+                    <input
+                      ref={editInputRef}
+                      className={styles.inlineInput}
+                      value={editing.value}
+                      onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
+                      onBlur={() => void commitEdit()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void commitEdit()
+                        if (e.key === 'Escape') setEditing(null)
+                        e.stopPropagation()
+                      }}
+                      style={{ width: '5ch' }}
+                    />
+                  ) : (
+                    member.initials
+                  )}
+                </td>
+                <td
+                  className={styles.editableCell}
+                  title="Click to edit name"
+                  onClick={e => {
+                    e.stopPropagation()
+                    setSelectedIdx(idx)
+                    openEdit(member.id, 'name', member.name)
+                  }}
+                >
+                  {editing?.id === member.id && editing.field === 'name' ? (
+                    <input
+                      ref={editInputRef}
+                      className={styles.inlineInput}
+                      value={editing.value}
+                      onChange={e => setEditing({ ...editing, value: e.currentTarget.value })}
+                      onBlur={() => void commitEdit()}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') void commitEdit()
+                        if (e.key === 'Escape') setEditing(null)
+                        e.stopPropagation()
+                      }}
+                    />
+                  ) : (
+                    member.name
+                  )}
+                </td>
+                <td>
+                  <button
+                    className={`${styles.statusBtn} ${member.status === 'Active' ? styles.active : styles.inactive}`}
+                    onClick={e => {
+                      e.stopPropagation()
+                      void toggleStatus(member.id, member.status)
+                    }}
+                  >
+                    {member.status}
+                  </button>
+                </td>
+                <td>{elapsed(member.createdAt)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

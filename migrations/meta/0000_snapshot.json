@@ -1,40 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "56b4b3c0-d1dc-4aab-a21b-f6a642d703f4",
+  "id": "8ddd7860-1a03-4700-9793-6bdf7cd6589c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "clients": {
-      "name": "clients",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "deliverables": {
       "name": "deliverables",
       "columns": {
@@ -59,15 +28,8 @@
           "notNull": false,
           "autoincrement": false
         },
-        "group_id": {
-          "name": "group_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "subject_id": {
-          "name": "subject_id",
+        "subproject_id": {
+          "name": "subproject_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -145,25 +107,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "deliverables_group_id_project_groups_id_fk": {
-          "name": "deliverables_group_id_project_groups_id_fk",
+        "deliverables_subproject_id_subprojects_id_fk": {
+          "name": "deliverables_subproject_id_subprojects_id_fk",
           "tableFrom": "deliverables",
-          "tableTo": "project_groups",
+          "tableTo": "subprojects",
           "columnsFrom": [
-            "group_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "deliverables_subject_id_subjects_id_fk": {
-          "name": "deliverables_subject_id_subjects_id_fk",
-          "tableFrom": "deliverables",
-          "tableTo": "subjects",
-          "columnsFrom": [
-            "subject_id"
+            "subproject_id"
           ],
           "columnsTo": [
             "id"
@@ -189,58 +138,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "project_groups": {
-      "name": "project_groups",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "project_id": {
-          "name": "project_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "project_groups_project_id_projects_id_fk": {
-          "name": "project_groups_project_id_projects_id_fk",
-          "tableFrom": "project_groups",
-          "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "projects": {
       "name": "projects",
       "columns": {
@@ -248,13 +145,6 @@
           "name": "id",
           "type": "text",
           "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "client_id": {
-          "name": "client_id",
-          "type": "text",
-          "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
@@ -274,6 +164,13 @@
         },
         "status": {
           "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "due_date": {
+          "name": "due_date",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -302,21 +199,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "projects_client_id_clients_id_fk": {
-          "name": "projects_client_id_clients_id_fk",
-          "tableFrom": "projects",
-          "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -333,6 +216,13 @@
         },
         "name": {
           "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "initials": {
+          "name": "initials",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -359,8 +249,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "subjects": {
-      "name": "subjects",
+    "subprojects": {
+      "name": "subprojects",
       "columns": {
         "id": {
           "name": "id",
@@ -376,13 +266,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "group_id": {
-          "name": "group_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -390,29 +273,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "type": {
-          "name": "type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
+        "due_date": {
+          "name": "due_date",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -424,36 +286,16 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
         }
       },
       "indexes": {},
       "foreignKeys": {
-        "subjects_project_id_projects_id_fk": {
-          "name": "subjects_project_id_projects_id_fk",
-          "tableFrom": "subjects",
+        "subprojects_project_id_projects_id_fk": {
+          "name": "subprojects_project_id_projects_id_fk",
+          "tableFrom": "subprojects",
           "tableTo": "projects",
           "columnsFrom": [
             "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "subjects_group_id_project_groups_id_fk": {
-          "name": "subjects_group_id_project_groups_id_fk",
-          "tableFrom": "subjects",
-          "tableTo": "project_groups",
-          "columnsFrom": [
-            "group_id"
           ],
           "columnsTo": [
             "id"
@@ -476,8 +318,15 @@
           "notNull": true,
           "autoincrement": false
         },
-        "subject_id": {
-          "name": "subject_id",
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subproject_id": {
+          "name": "subproject_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -490,34 +339,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "task_type": {
-          "name": "task_type",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "deliverable_id": {
-          "name": "deliverable_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "parent_document_id": {
-          "name": "parent_document_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "sort_order": {
-          "name": "sort_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "title": {
           "name": "title",
           "type": "text",
@@ -525,8 +346,8 @@
           "notNull": true,
           "autoincrement": false
         },
-        "category": {
-          "name": "category",
+        "scope": {
+          "name": "scope",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -550,7 +371,7 @@
           "name": "due_date",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "notes": {
@@ -584,12 +405,25 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "tasks_subject_id_subjects_id_fk": {
-          "name": "tasks_subject_id_subjects_id_fk",
+        "tasks_project_id_projects_id_fk": {
+          "name": "tasks_project_id_projects_id_fk",
           "tableFrom": "tasks",
-          "tableTo": "subjects",
+          "tableTo": "projects",
           "columnsFrom": [
-            "subject_id"
+            "project_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "tasks_subproject_id_subprojects_id_fk": {
+          "name": "tasks_subproject_id_subprojects_id_fk",
+          "tableFrom": "tasks",
+          "tableTo": "subprojects",
+          "columnsFrom": [
+            "subproject_id"
           ],
           "columnsTo": [
             "id"
@@ -603,19 +437,6 @@
           "tableTo": "staff",
           "columnsFrom": [
             "staff_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "tasks_deliverable_id_deliverables_id_fk": {
-          "name": "tasks_deliverable_id_deliverables_id_fk",
-          "tableFrom": "tasks",
-          "tableTo": "deliverables",
-          "columnsFrom": [
-            "deliverable_id"
           ],
           "columnsTo": [
             "id"

@@ -45,10 +45,9 @@ describe('registerTaskHandlers', () => {
 
   it('tasks:create handler passes input to use case', () => {
     const input = {
-      subjectId: 's1',
+      projectId: 'p1',
       title: 'X',
-      taskType: 'Research',
-      category: 'Finance',
+      scope: 'Full Memo',
       status: 'Backlog',
       priority: 'Normal'
     }

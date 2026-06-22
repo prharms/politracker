@@ -1,0 +1,1 @@
+ALTER TABLE `subprojects` ADD `status` text DEFAULT 'Active' NOT NULL;

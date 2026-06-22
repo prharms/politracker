@@ -6,8 +6,7 @@ export interface DeliverableDto {
   projectId: string
   projectName: string
   parentDeliverableId: string | null
-  groupId: string | null
-  subjectId: string | null
+  subprojectId: string | null
   type: DeliverableType
   title: string
   status: DeliverableStatus
@@ -21,8 +20,7 @@ export interface DeliverableDto {
 export interface NewDeliverableInput {
   projectId: string
   parentDeliverableId?: string
-  groupId?: string
-  subjectId?: string
+  subprojectId?: string
   type: DeliverableType
   title: string
   status: DeliverableStatus

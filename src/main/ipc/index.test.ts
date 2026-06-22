@@ -4,14 +4,10 @@ vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
 
 import { ipcMain } from 'electron'
 import { registerAllHandlers } from './index'
-import type { ListClientsUseCase } from '../application/use-cases/clients/list-clients-use-case'
-import type { CreateClientUseCase } from '../application/use-cases/clients/create-client-use-case'
-import type { UpdateClientUseCase } from '../application/use-cases/clients/update-client-use-case'
-import type { DeleteClientUseCase } from '../application/use-cases/clients/delete-client-use-case'
-import type { ListSubjectsUseCase } from '../application/use-cases/subjects/list-subjects-use-case'
-import type { CreateSubjectUseCase } from '../application/use-cases/subjects/create-subject-use-case'
-import type { UpdateSubjectUseCase } from '../application/use-cases/subjects/update-subject-use-case'
-import type { DeleteSubjectUseCase } from '../application/use-cases/subjects/delete-subject-use-case'
+import type { ListSubprojectsUseCase } from '../application/use-cases/subprojects/list-subprojects-use-case'
+import type { CreateSubprojectUseCase } from '../application/use-cases/subprojects/create-subproject-use-case'
+import type { UpdateSubprojectUseCase } from '../application/use-cases/subprojects/update-subproject-use-case'
+import type { DeleteSubprojectUseCase } from '../application/use-cases/subprojects/delete-subproject-use-case'
 import type { ListStaffUseCase } from '../application/use-cases/staff/list-staff-use-case'
 import type { CreateStaffUseCase } from '../application/use-cases/staff/create-staff-use-case'
 import type { UpdateStaffUseCase } from '../application/use-cases/staff/update-staff-use-case'
@@ -35,14 +31,10 @@ describe('registerAllHandlers', () => {
 
   it('registers handlers for all channels', () => {
     registerAllHandlers(
-      uc<ListClientsUseCase>(),
-      uc<CreateClientUseCase>(),
-      uc<UpdateClientUseCase>(),
-      uc<DeleteClientUseCase>(),
-      uc<ListSubjectsUseCase>(),
-      uc<CreateSubjectUseCase>(),
-      uc<UpdateSubjectUseCase>(),
-      uc<DeleteSubjectUseCase>(),
+      uc<ListSubprojectsUseCase>(),
+      uc<CreateSubprojectUseCase>(),
+      uc<UpdateSubprojectUseCase>(),
+      uc<DeleteSubprojectUseCase>(),
       uc<ListStaffUseCase>(),
       uc<CreateStaffUseCase>(),
       uc<UpdateStaffUseCase>(),
@@ -60,8 +52,7 @@ describe('registerAllHandlers', () => {
     const channels = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls.map(
       (c: unknown[]) => c[0]
     )
-    expect(channels).toContain('clients:list')
-    expect(channels).toContain('subjects:list')
+    expect(channels).toContain('subprojects:list')
     expect(channels).toContain('staff:list')
     expect(channels).toContain('projects:list')
     expect(channels).toContain('tasks:list')

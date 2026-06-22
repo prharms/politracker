@@ -80,7 +80,15 @@ switch ($Target) {
     "dev"         { npm run dev }
     "build"       { npm run build }
     "migration"   { npm run rebuild:node; npm run migration }
-    "db-upgrade"  { npm run rebuild:node; npm run "db-upgrade" }
+    "db-upgrade"  {
+        $dbPath = if ($env:POLITICKET_DB_PATH) { $env:POLITICKET_DB_PATH } else { Join-Path $env:LOCALAPPDATA "Politicket\data\politicket.db" }
+        if (Test-Path $dbPath) {
+            $bak = "$dbPath.bak"
+            Copy-Item $dbPath $bak -Force
+            Write-Host "  Backup created: $bak" -ForegroundColor Cyan
+        }
+        npm run rebuild:node; npm run "db-upgrade"
+    }
     "coverage"    { npx vitest run --coverage --reporter=html }
     "help" {
         Write-Host ""

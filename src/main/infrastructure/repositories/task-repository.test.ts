@@ -2,43 +2,36 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { TaskRepository } from './task-repository'
 import { createTestDatabase } from '../db/test-database'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { clients, projects, subjects, staff } from '../db/schema'
+import { projects, subprojects, staff } from '../db/schema'
 
 let db: BetterSQLite3Database
 let repo: TaskRepository
-const CLIENT_ID = 'client-1'
 const PROJECT_ID = 'proj-1'
-const SUBJECT_ID = 'subj-1'
+const SUBPROJECT_ID = 'sp-1'
 const STAFF_ID = 'staff-1'
 
 beforeEach(() => {
   db = createTestDatabase()
   const now = new Date().toISOString()
-  db.insert(clients).values({ id: CLIENT_ID, name: 'Acme PAC', createdAt: now }).run()
   db.insert(projects)
     .values({
       id: PROJECT_ID,
-      clientId: CLIENT_ID,
       name: 'CA Gov 2026',
       type: 'Candidate Campaign',
       status: 'Active',
+      dueDate: '2026-11-03',
       notes: null,
       createdAt: now,
       updatedAt: now
     })
     .run()
-  db.insert(subjects)
+  db.insert(subprojects)
     .values({
-      id: SUBJECT_ID,
+      id: SUBPROJECT_ID,
       projectId: PROJECT_ID,
-      groupId: null,
-      name: 'John Smith',
-      type: 'Individual',
-      role: 'Candidate',
-      status: 'Active',
-      notes: null,
-      createdAt: now,
-      updatedAt: now
+      name: 'None',
+      dueDate: null,
+      createdAt: now
     })
     .run()
   db.insert(staff)
@@ -47,14 +40,16 @@ beforeEach(() => {
   repo = new TaskRepository(db)
 })
 
+/** Helper to build a valid new-task input. */
 const newTask = () => ({
-  subjectId: SUBJECT_ID,
+  projectId: PROJECT_ID,
+  subprojectId: SUBPROJECT_ID,
   staffId: STAFF_ID,
-  taskType: 'Research' as const,
   title: 'Check campaign finance',
-  category: 'Finance' as const,
-  status: 'Backlog' as const,
-  priority: 'Normal' as const
+  scope: 'Full Memo' as const,
+  status: 'Active' as const,
+  priority: 'Normal' as const,
+  dueDate: '2026-11-03'
 })
 
 describe('TaskRepository', () => {
@@ -65,10 +60,10 @@ describe('TaskRepository', () => {
   it('create persists a task and returns it with joined names', () => {
     const result = repo.create(newTask())
     expect(result.title).toBe('Check campaign finance')
-    expect(result.subjectName).toBe('John Smith')
     expect(result.projectName).toBe('CA Gov 2026')
     expect(result.staffName).toBe('Alice')
-    expect(result.taskType).toBe('Research')
+    expect(result.scope).toBe('Full Memo')
+    expect(result.dueDate).toBe('2026-11-03')
   })
 
   it('list returns all tasks when no filters are given', () => {
@@ -92,11 +87,11 @@ describe('TaskRepository', () => {
   })
 
   it('list filters by status', () => {
-    repo.create(newTask())
-    repo.create({ ...newTask(), title: 'In progress task', status: 'In Progress' })
-    const backlog = repo.list({ status: 'Backlog' })
-    expect(backlog.every(t => t.status === 'Backlog')).toBe(true)
-    expect(backlog).toHaveLength(1)
+    repo.create({ ...newTask(), status: 'Inactive' })
+    repo.create({ ...newTask(), title: 'Active task', status: 'Active' })
+    const active = repo.list({ status: 'Active' })
+    expect(active.every(t => t.status === 'Active')).toBe(true)
+    expect(active).toHaveLength(1)
   })
 
   it('findById returns the correct task', () => {
@@ -112,15 +107,15 @@ describe('TaskRepository', () => {
   it('updateStatus changes the status and sets closedAt', () => {
     const created = repo.create(newTask())
     const closedAt = new Date().toISOString()
-    const updated = repo.updateStatus(created.id, 'Closed', closedAt)
-    expect(updated.status).toBe('Closed')
+    const updated = repo.updateStatus(created.id, 'Complete', closedAt)
+    expect(updated.status).toBe('Complete')
     expect(updated.closedAt).toBe(closedAt)
   })
 
   it('updateStatus clears closedAt when status is not closed', () => {
     const created = repo.create(newTask())
-    const updated = repo.updateStatus(created.id, 'In Progress', null)
-    expect(updated.status).toBe('In Progress')
+    const updated = repo.updateStatus(created.id, 'Active', null)
+    expect(updated.status).toBe('Active')
     expect(updated.closedAt).toBeNull()
   })
 
@@ -130,10 +125,16 @@ describe('TaskRepository', () => {
     expect(updated.title).toBe('Updated title')
   })
 
+  it('update changes the due date', () => {
+    const created = repo.create(newTask())
+    const updated = repo.update(created.id, { dueDate: '2027-01-01' })
+    expect(updated.dueDate).toBe('2027-01-01')
+  })
+
   it('update with Closed status sets closedAt', () => {
     const created = repo.create(newTask())
-    const updated = repo.update(created.id, { status: 'Closed' })
-    expect(updated.status).toBe('Closed')
+    const updated = repo.update(created.id, { status: 'Complete' })
+    expect(updated.status).toBe('Complete')
     expect(updated.closedAt).not.toBeNull()
   })
 
@@ -151,11 +152,5 @@ describe('TaskRepository', () => {
     repo.create(newTask())
     repo.create({ ...newTask(), title: 'Second task' })
     expect(repo.countByStaff(STAFF_ID)).toBe(2)
-  })
-
-  it('list filters by deliverableId', () => {
-    repo.create(newTask())
-    const results = repo.list({ deliverableId: 'nonexistent' })
-    expect(results).toHaveLength(0)
   })
 })

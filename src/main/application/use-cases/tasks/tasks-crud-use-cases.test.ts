@@ -6,22 +6,17 @@ import type { TaskRepositoryPort } from '../../ports/task-repository-port'
 
 const stub = {
   id: 't1',
-  title: 'Research finance',
-  taskType: 'Research' as const,
-  category: 'Finance' as const,
-  status: 'Backlog' as const,
+  title: 'Research finances',
+  scope: 'Full Memo' as const,
+  status: 'Active' as const,
   priority: 'Normal' as const,
-  subjectId: 's1',
-  subjectName: 'John Smith',
   projectId: 'p1',
   projectName: 'CA Gov 2026',
+  subprojectId: 'sp1',
+  subprojectName: 'None',
   staffId: null,
   staffName: null,
-  deliverableId: null,
-  deliverableTitle: null,
-  parentDocumentId: null,
-  sortOrder: null,
-  dueDate: null,
+  dueDate: '2026-11-03',
   notes: null,
   closedAt: null,
   createdAt: '2026-01-01',
@@ -42,12 +37,13 @@ describe('CreateTaskUseCase', () => {
   it('creates a task and returns it', () => {
     const repo = mockRepo()
     const result = new CreateTaskUseCase(repo).execute({
-      subjectId: 's1',
-      title: 'Research finance',
-      taskType: 'Research',
-      category: 'Finance',
-      status: 'Backlog',
-      priority: 'Normal'
+      projectId: 'p1',
+      subprojectId: 'sp1',
+      title: 'Research finances',
+      scope: 'Full Memo',
+      status: 'Active',
+      priority: 'Normal',
+      dueDate: '2026-11-03'
     })
     expect(repo.create).toHaveBeenCalled()
     expect(result).toEqual(stub)
@@ -56,27 +52,57 @@ describe('CreateTaskUseCase', () => {
   it('throws when title is empty', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
-        subjectId: 's1',
+        projectId: 'p1',
+        subprojectId: 'sp1',
         title: '  ',
-        taskType: 'Research',
-        category: 'Finance',
-        status: 'Backlog',
-        priority: 'Normal'
+        scope: 'Full Memo',
+        status: 'Active',
+        priority: 'Normal',
+        dueDate: '2026-11-03'
       })
     ).toThrow('Task title must not be empty')
   })
 
-  it('throws when subjectId is empty', () => {
+  it('throws when projectId is empty', () => {
     expect(() =>
       new CreateTaskUseCase(mockRepo()).execute({
-        subjectId: '  ',
+        projectId: '  ',
+        subprojectId: 'sp1',
         title: 'X',
-        taskType: 'Research',
-        category: 'Finance',
-        status: 'Backlog',
-        priority: 'Normal'
+        scope: 'Full Memo',
+        status: 'Active',
+        priority: 'Normal',
+        dueDate: '2026-11-03'
       })
-    ).toThrow('Subject id must not be empty')
+    ).toThrow('Project id must not be empty')
+  })
+
+  it('throws when subprojectId is empty', () => {
+    expect(() =>
+      new CreateTaskUseCase(mockRepo()).execute({
+        projectId: 'p1',
+        subprojectId: '  ',
+        title: 'X',
+        scope: 'Full Memo',
+        status: 'Active',
+        priority: 'Normal',
+        dueDate: '2026-11-03'
+      })
+    ).toThrow('Subproject id must not be empty')
+  })
+
+  it('throws when due date is missing', () => {
+    expect(() =>
+      new CreateTaskUseCase(mockRepo()).execute({
+        projectId: 'p1',
+        subprojectId: 'sp1',
+        title: 'X',
+        scope: 'Full Memo',
+        status: 'Active',
+        priority: 'Normal',
+        dueDate: ''
+      })
+    ).toThrow('Due date is required')
   })
 })
 
