@@ -1,11 +1,7 @@
 import { app, BrowserWindow, Menu } from 'electron'
 import path from 'path'
-import { openDatabase } from './infrastructure/db/database'
 import {
-  makeListClientsUseCase,
-  makeCreateClientUseCase,
-  makeUpdateClientUseCase,
-  makeDeleteClientUseCase,
+  openDatabase,
   makeListSubprojectsUseCase,
   makeCreateSubprojectUseCase,
   makeUpdateSubprojectUseCase,
@@ -61,10 +57,6 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const db = openDatabase()
   registerAllHandlers(
-    makeListClientsUseCase(db),
-    makeCreateClientUseCase(db),
-    makeUpdateClientUseCase(db),
-    makeDeleteClientUseCase(db),
     makeListSubprojectsUseCase(db),
     makeCreateSubprojectUseCase(db),
     makeUpdateSubprojectUseCase(db),

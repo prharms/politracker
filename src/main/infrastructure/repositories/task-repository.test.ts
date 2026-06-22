@@ -2,11 +2,10 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { TaskRepository } from './task-repository'
 import { createTestDatabase } from '../db/test-database'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { clients, projects, subprojects, staff } from '../db/schema'
+import { projects, subprojects, staff } from '../db/schema'
 
 let db: BetterSQLite3Database
 let repo: TaskRepository
-const CLIENT_ID = 'client-1'
 const PROJECT_ID = 'proj-1'
 const SUBPROJECT_ID = 'sp-1'
 const STAFF_ID = 'staff-1'
@@ -14,21 +13,26 @@ const STAFF_ID = 'staff-1'
 beforeEach(() => {
   db = createTestDatabase()
   const now = new Date().toISOString()
-  db.insert(clients).values({ id: CLIENT_ID, name: 'Acme PAC', createdAt: now }).run()
   db.insert(projects)
     .values({
       id: PROJECT_ID,
-      clientId: CLIENT_ID,
       name: 'CA Gov 2026',
       type: 'Candidate Campaign',
       status: 'Active',
+      dueDate: '2026-11-03',
       notes: null,
       createdAt: now,
       updatedAt: now
     })
     .run()
   db.insert(subprojects)
-    .values({ id: SUBPROJECT_ID, projectId: PROJECT_ID, name: 'None', createdAt: now })
+    .values({
+      id: SUBPROJECT_ID,
+      projectId: PROJECT_ID,
+      name: 'None',
+      dueDate: null,
+      createdAt: now
+    })
     .run()
   db.insert(staff)
     .values({ id: STAFF_ID, name: 'Alice', initials: 'A', status: 'Active', createdAt: now })
@@ -36,6 +40,7 @@ beforeEach(() => {
   repo = new TaskRepository(db)
 })
 
+/** Helper to build a valid new-task input. */
 const newTask = () => ({
   projectId: PROJECT_ID,
   subprojectId: SUBPROJECT_ID,
@@ -43,7 +48,8 @@ const newTask = () => ({
   title: 'Check campaign finance',
   scope: 'Full Memo' as const,
   status: 'Backlog' as const,
-  priority: 'Normal' as const
+  priority: 'Normal' as const,
+  dueDate: '2026-11-03'
 })
 
 describe('TaskRepository', () => {
@@ -57,6 +63,7 @@ describe('TaskRepository', () => {
     expect(result.projectName).toBe('CA Gov 2026')
     expect(result.staffName).toBe('Alice')
     expect(result.scope).toBe('Full Memo')
+    expect(result.dueDate).toBe('2026-11-03')
   })
 
   it('list returns all tasks when no filters are given', () => {
@@ -116,6 +123,12 @@ describe('TaskRepository', () => {
     const created = repo.create(newTask())
     const updated = repo.update(created.id, { title: 'Updated title' })
     expect(updated.title).toBe('Updated title')
+  })
+
+  it('update changes the due date', () => {
+    const created = repo.create(newTask())
+    const updated = repo.update(created.id, { dueDate: '2027-01-01' })
+    expect(updated.dueDate).toBe('2027-01-01')
   })
 
   it('update with Closed status sets closedAt', () => {

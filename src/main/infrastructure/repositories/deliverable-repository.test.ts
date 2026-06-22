@@ -2,26 +2,24 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { DeliverableRepository } from './deliverable-repository'
 import { createTestDatabase } from '../db/test-database'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { clients, projects } from '../db/schema'
+import { projects } from '../db/schema'
 
 let db: BetterSQLite3Database
 let repo: DeliverableRepository
-const CLIENT_ID = 'client-1'
 const PROJECT_ID = 'proj-1'
 const PROJECT2_ID = 'proj-2'
 
 beforeEach(() => {
   db = createTestDatabase()
   const now = new Date().toISOString()
-  db.insert(clients).values({ id: CLIENT_ID, name: 'Acme PAC', createdAt: now }).run()
   db.insert(projects)
     .values({
       id: PROJECT_ID,
-      clientId: CLIENT_ID,
       name: 'Project A',
       type: 'Background Research',
       status: 'Active',
-      notes: undefined,
+      dueDate: '2026-11-03',
+      notes: null,
       createdAt: now,
       updatedAt: now
     })
@@ -29,11 +27,11 @@ beforeEach(() => {
   db.insert(projects)
     .values({
       id: PROJECT2_ID,
-      clientId: CLIENT_ID,
       name: 'Project B',
       type: 'Ballot Measure',
       status: 'Active',
-      notes: undefined,
+      dueDate: '2026-11-03',
+      notes: null,
       createdAt: now,
       updatedAt: now
     })

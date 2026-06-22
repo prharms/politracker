@@ -1,7 +1,7 @@
 import { eq, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
-import { projects, clients, tasks } from '../db/schema'
+import { projects, tasks } from '../db/schema'
 import type { ProjectRepositoryPort } from '../../application/ports/project-repository-port'
 import type {
   ProjectDto,
@@ -12,43 +12,26 @@ import type { ProjectType, ProjectStatus } from '../../../shared/constants'
 
 type ProjectRow = {
   id: string
-  clientId: string
-  clientName: string | null
   name: string
   type: string
   status: string
+  dueDate: string
   notes: string | null
   createdAt: string
   updatedAt: string
 }
 
-/** Map a raw join row to a ProjectDto. */
+/** Map a raw row to a ProjectDto. */
 function toDto(row: ProjectRow): ProjectDto {
   return {
     id: row.id,
-    clientId: row.clientId,
-    clientName: row.clientName ?? '',
     name: row.name,
     type: row.type as ProjectType,
     status: row.status as ProjectStatus,
+    dueDate: row.dueDate,
     notes: row.notes,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt
-  }
-}
-
-/** Select shape for project + client join. */
-function projectSelectShape() {
-  return {
-    id: projects.id,
-    clientId: projects.clientId,
-    clientName: clients.name,
-    name: projects.name,
-    type: projects.type,
-    status: projects.status,
-    notes: projects.notes,
-    createdAt: projects.createdAt,
-    updatedAt: projects.updatedAt
   }
 }
 
@@ -57,29 +40,21 @@ export class ProjectRepository implements ProjectRepositoryPort {
   /** Construct with a Drizzle database instance. */
   constructor(private readonly db: BetterSQLite3Database) {}
 
-  /** Return all projects ordered by name with client name joined. */
+  /** Return all projects ordered by name. */
   listAll(): ProjectDto[] {
-    const rows = this.db
-      .select(projectSelectShape())
-      .from(projects)
-      .leftJoin(clients, eq(projects.clientId, clients.id))
-      .orderBy(projects.name)
-      .all()
+    const rows = this.db.select().from(projects).orderBy(projects.name).all() as ProjectRow[]
     return rows.map(toDto)
   }
 
-  /** Return a single project by id with client name, or null if not found. */
+  /** Return a single project by id, or null if not found. */
   findById(id: string): ProjectDto | null {
-    const row = this.db
-      .select(projectSelectShape())
-      .from(projects)
-      .leftJoin(clients, eq(projects.clientId, clients.id))
-      .where(eq(projects.id, id))
-      .get()
-    return row ? toDto(row as ProjectRow) : null
+    const row = this.db.select().from(projects).where(eq(projects.id, id)).get() as
+      | ProjectRow
+      | undefined
+    return row ? toDto(row) : null
   }
 
-  /** Persist a new project and return it with joined client name. */
+  /** Persist a new project and return it. */
   create(input: NewProjectInput): ProjectDto {
     const now = new Date().toISOString()
     const id = randomUUID()
@@ -87,10 +62,10 @@ export class ProjectRepository implements ProjectRepositoryPort {
       .insert(projects)
       .values({
         id,
-        clientId: input.clientId,
         name: input.name,
         type: input.type,
         status: input.status,
+        dueDate: input.dueDate,
         notes: input.notes ?? null,
         createdAt: now,
         updatedAt: now
@@ -110,6 +85,7 @@ export class ProjectRepository implements ProjectRepositoryPort {
         name: input.name ?? current.name,
         type: input.type ?? current.type,
         status: input.status ?? current.status,
+        dueDate: input.dueDate ?? current.dueDate,
         notes: input.notes !== undefined ? input.notes : current.notes,
         updatedAt: now
       })

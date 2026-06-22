@@ -15,7 +15,7 @@ const stubTask: TaskDto = {
   subprojectName: 'None',
   staffId: 'staff-1',
   staffName: 'Alice',
-  dueDate: null,
+  dueDate: '2026-11-03',
   notes: null,
   closedAt: null,
   createdAt: '2026-01-01T00:00:00.000Z',

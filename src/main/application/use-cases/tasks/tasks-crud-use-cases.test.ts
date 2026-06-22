@@ -16,7 +16,7 @@ const stub = {
   subprojectName: 'None',
   staffId: null,
   staffName: null,
-  dueDate: null,
+  dueDate: '2026-11-03',
   notes: null,
   closedAt: null,
   createdAt: '2026-01-01',
@@ -42,7 +42,8 @@ describe('CreateTaskUseCase', () => {
       title: 'Research finances',
       scope: 'Full Memo',
       status: 'Backlog',
-      priority: 'Normal'
+      priority: 'Normal',
+      dueDate: '2026-11-03'
     })
     expect(repo.create).toHaveBeenCalled()
     expect(result).toEqual(stub)
@@ -56,7 +57,8 @@ describe('CreateTaskUseCase', () => {
         title: '  ',
         scope: 'Full Memo',
         status: 'Backlog',
-        priority: 'Normal'
+        priority: 'Normal',
+        dueDate: '2026-11-03'
       })
     ).toThrow('Task title must not be empty')
   })
@@ -69,7 +71,8 @@ describe('CreateTaskUseCase', () => {
         title: 'X',
         scope: 'Full Memo',
         status: 'Backlog',
-        priority: 'Normal'
+        priority: 'Normal',
+        dueDate: '2026-11-03'
       })
     ).toThrow('Project id must not be empty')
   })
@@ -82,9 +85,24 @@ describe('CreateTaskUseCase', () => {
         title: 'X',
         scope: 'Full Memo',
         status: 'Backlog',
-        priority: 'Normal'
+        priority: 'Normal',
+        dueDate: '2026-11-03'
       })
     ).toThrow('Subproject id must not be empty')
+  })
+
+  it('throws when due date is missing', () => {
+    expect(() =>
+      new CreateTaskUseCase(mockRepo()).execute({
+        projectId: 'p1',
+        subprojectId: 'sp1',
+        title: 'X',
+        scope: 'Full Memo',
+        status: 'Backlog',
+        priority: 'Normal',
+        dueDate: ''
+      })
+    ).toThrow('Due date is required')
   })
 })
 

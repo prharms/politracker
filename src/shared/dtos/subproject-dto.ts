@@ -3,6 +3,8 @@ export interface SubprojectDto {
   id: string
   projectId: string
   name: string
+  /** Null for the auto-created "None" subproject, which inherits due date from the parent project. */
+  dueDate: string | null
   createdAt: string
 }
 
@@ -10,11 +12,14 @@ export interface SubprojectDto {
 export interface NewSubprojectInput {
   projectId: string
   name: string
+  /** Optional - auto-created "None" subproject omits this and inherits from the parent project. */
+  dueDate?: string
 }
 
 /** Fields that can be updated on a subproject. */
 export interface UpdateSubprojectInput {
-  name: string
+  name?: string
+  dueDate?: string | null
 }
 
 /** Result returned by a delete subproject operation. */

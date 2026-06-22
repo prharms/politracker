@@ -1,20 +1,16 @@
 /**
  * Composition root - the only file permitted to import from all layers.
  * Wires infrastructure repositories to application use cases.
+ * Also re-exports openDatabase so index.ts never needs to reach into infrastructure directly.
  */
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
+export { openDatabase } from './infrastructure/db/database'
 
-import { ClientRepository } from './infrastructure/repositories/client-repository'
 import { SubprojectRepository } from './infrastructure/repositories/subproject-repository'
 import { StaffRepository } from './infrastructure/repositories/staff-repository'
 import { ProjectRepository } from './infrastructure/repositories/project-repository'
 import { DeliverableRepository } from './infrastructure/repositories/deliverable-repository'
 import { TaskRepository } from './infrastructure/repositories/task-repository'
-
-import { ListClientsUseCase } from './application/use-cases/clients/list-clients-use-case'
-import { CreateClientUseCase } from './application/use-cases/clients/create-client-use-case'
-import { UpdateClientUseCase } from './application/use-cases/clients/update-client-use-case'
-import { DeleteClientUseCase } from './application/use-cases/clients/delete-client-use-case'
 
 import { ListSubprojectsUseCase } from './application/use-cases/subprojects/list-subprojects-use-case'
 import { CreateSubprojectUseCase } from './application/use-cases/subprojects/create-subproject-use-case'
@@ -39,10 +35,6 @@ import { CreateTaskUseCase } from './application/use-cases/tasks/create-task-use
 import { UpdateTaskUseCase } from './application/use-cases/tasks/update-task-use-case'
 import { DeleteTaskUseCase } from './application/use-cases/tasks/delete-task-use-case'
 
-/** Instantiate a ClientRepository for the given database. */
-function clients(db: BetterSQLite3Database) {
-  return new ClientRepository(db)
-}
 /** Instantiate a SubprojectRepository for the given database. */
 function subprojectsRepo(db: BetterSQLite3Database) {
   return new SubprojectRepository(db)
@@ -58,23 +50,6 @@ function projectsRepo(db: BetterSQLite3Database) {
 /** Instantiate a TaskRepository for the given database. */
 function tasksRepo(db: BetterSQLite3Database) {
   return new TaskRepository(db)
-}
-
-/** Build a ListClientsUseCase wired to the Drizzle repository. */
-export function makeListClientsUseCase(db: BetterSQLite3Database): ListClientsUseCase {
-  return new ListClientsUseCase(clients(db))
-}
-/** Build a CreateClientUseCase wired to the Drizzle repository. */
-export function makeCreateClientUseCase(db: BetterSQLite3Database): CreateClientUseCase {
-  return new CreateClientUseCase(clients(db))
-}
-/** Build an UpdateClientUseCase wired to the Drizzle repository. */
-export function makeUpdateClientUseCase(db: BetterSQLite3Database): UpdateClientUseCase {
-  return new UpdateClientUseCase(clients(db))
-}
-/** Build a DeleteClientUseCase wired to the Drizzle repository. */
-export function makeDeleteClientUseCase(db: BetterSQLite3Database): DeleteClientUseCase {
-  return new DeleteClientUseCase(clients(db))
 }
 
 /** Build a ListSubprojectsUseCase wired to the Drizzle repository. */
@@ -119,7 +94,7 @@ export function makeDeleteStaffUseCase(db: BetterSQLite3Database): DeleteStaffUs
 export function makeListProjectsUseCase(db: BetterSQLite3Database): ListProjectsUseCase {
   return new ListProjectsUseCase(projectsRepo(db))
 }
-/** Build a CreateProjectUseCase wired to the Drizzle repository. */
+/** Build a CreateProjectUseCase wired to the Drizzle repositories. */
 export function makeCreateProjectUseCase(db: BetterSQLite3Database): CreateProjectUseCase {
   return new CreateProjectUseCase(projectsRepo(db), subprojectsRepo(db))
 }

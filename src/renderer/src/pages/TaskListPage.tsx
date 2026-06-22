@@ -3,29 +3,21 @@ import styles from './CrudPage.module.css'
 import { useTasks } from '../../hooks/use-tasks'
 import { useFilterOptions } from '../../hooks/use-filter-options'
 import { useSubprojects } from '../../hooks/use-subprojects'
+import { formatDue, isOverdue } from '../../../shared/utils/days-until'
 import type { TaskDto, TaskListFilters } from '../../../shared/dtos/task-dto'
 import { TASK_SCOPES, TASK_PRIORITIES, TASK_STATUSES } from '../../../shared/constants'
 import type { TaskScope, TaskPriority } from '../../../shared/constants'
+
+/** Return the staff member's name, or a placeholder if unassigned. */
+function staffLabel(name: string | null): string {
+  return name ?? '-'
+}
 
 /** Renders loading indicator or empty-state message for the task table. */
 function TaskTableStatus({ loading, count }: { loading: boolean; count: number }) {
   if (loading) return <div className={styles.loading}>LOADING...</div>
   if (count === 0) return <div className={styles.empty}>NO TASKS - PRESS [A] TO ADD</div>
   return null
-}
-
-/** Format elapsed time since a given ISO timestamp. */
-function formatAge(isoString: string): string {
-  const ms = Date.now() - new Date(isoString).getTime()
-  const days = Math.floor(ms / 86400000)
-  if (days === 0) return 'today'
-  if (days === 1) return '1d'
-  return `${days}d`
-}
-
-/** Return true if the task has been open for more than 7 days. */
-function isStale(task: TaskDto): boolean {
-  return task.status !== 'Closed' && Date.now() - new Date(task.createdAt).getTime() > 7 * 86400000
 }
 
 interface ConfirmDelete {
@@ -43,7 +35,7 @@ interface TaskItemProps {
 function TaskItem({ task, selected, onSelect }: TaskItemProps) {
   const closed = task.status === 'Closed'
   const urgent = task.priority === 'Urgent' && !closed
-  const stale = isStale(task)
+  const overdue = !closed && isOverdue(task.dueDate)
   const project =
     task.subprojectName && task.subprojectName !== 'None'
       ? `${task.projectName}/${task.subprojectName}`
@@ -59,8 +51,8 @@ function TaskItem({ task, selected, onSelect }: TaskItemProps) {
       <td>{task.scope}</td>
       <td>{task.status}</td>
       <td style={urgent ? { color: '#ff3333' } : undefined}>{task.priority}</td>
-      <td>{task.staffName ?? '-'}</td>
-      <td style={stale ? { color: '#ff3333' } : undefined}>{formatAge(task.createdAt)}</td>
+      <td>{staffLabel(task.staffName)}</td>
+      <td style={overdue ? { color: '#ff3333' } : undefined}>{formatDue(task.dueDate)}</td>
     </tr>
   )
 }
@@ -75,12 +67,14 @@ interface AddTaskFormProps {
   addTitle: string
   addScope: TaskScope
   addPriority: TaskPriority
+  addDueDate: string
   onProjectChange: (v: string) => void
   onSubprojectChange: (v: string) => void
   onStaffChange: (v: string) => void
   onTitleChange: (v: string) => void
   onScopeChange: (v: TaskScope) => void
   onPriorityChange: (v: TaskPriority) => void
+  onDueDateChange: (v: string) => void
   onSubmit: () => void
   onCancel: () => void
   titleRef: React.RefObject<HTMLInputElement | null>
@@ -97,12 +91,14 @@ function AddTaskForm({
   addTitle,
   addScope,
   addPriority,
+  addDueDate,
   onProjectChange,
   onSubprojectChange,
   onStaffChange,
   onTitleChange,
   onScopeChange,
   onPriorityChange,
+  onDueDateChange,
   onSubmit,
   onCancel,
   titleRef
@@ -185,6 +181,19 @@ function AddTaskForm({
           </option>
         ))}
       </select>
+      <input
+        type="date"
+        className={styles.addInput}
+        style={{ width: '14ch' }}
+        value={addDueDate}
+        onChange={e => onDueDateChange(e.currentTarget.value)}
+        onKeyDown={e => {
+          if (e.key === 'Enter') onSubmit()
+          if (e.key === 'Escape') onCancel()
+          e.stopPropagation()
+        }}
+        aria-label="Due date"
+      />
       <button className={styles.addSubmit} onClick={onSubmit}>
         [ENTER]
       </button>
@@ -205,6 +214,7 @@ export function TaskListPage() {
   const [addTitle, setAddTitle] = useState('')
   const [addScope, setAddScope] = useState<TaskScope>(TASK_SCOPES[0])
   const [addPriority, setAddPriority] = useState<TaskPriority>('Normal')
+  const [addDueDate, setAddDueDate] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<ConfirmDelete | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
   const pageRef = useRef<HTMLDivElement>(null)
@@ -245,6 +255,7 @@ export function TaskListPage() {
   const cancelAdd = useCallback(() => {
     setShowAdd(false)
     setAddTitle('')
+    setAddDueDate('')
     setErrorMsg('')
   }, [])
 
@@ -261,6 +272,10 @@ export function TaskListPage() {
       setErrorMsg('Select a subproject')
       return
     }
+    if (!addDueDate) {
+      setErrorMsg('Due date is required')
+      return
+    }
     await createTask({
       projectId: addProjectId,
       subprojectId: addSubprojectId,
@@ -268,12 +283,23 @@ export function TaskListPage() {
       title: addTitle.trim(),
       scope: addScope,
       status: 'Backlog',
-      priority: addPriority
+      priority: addPriority,
+      dueDate: addDueDate
     })
     setAddTitle('')
+    setAddDueDate('')
     setShowAdd(false)
     setErrorMsg('')
-  }, [addTitle, addProjectId, addSubprojectId, addStaffId, addScope, addPriority, createTask])
+  }, [
+    addTitle,
+    addProjectId,
+    addSubprojectId,
+    addStaffId,
+    addScope,
+    addPriority,
+    addDueDate,
+    createTask
+  ])
 
   const confirmDeleteYes = useCallback(async () => {
     if (!confirmDelete) return
@@ -397,12 +423,14 @@ export function TaskListPage() {
           addTitle={addTitle}
           addScope={addScope}
           addPriority={addPriority}
+          addDueDate={addDueDate}
           onProjectChange={handleProjectChange}
           onSubprojectChange={setAddSubprojectId}
           onStaffChange={setAddStaffId}
           onTitleChange={setAddTitle}
           onScopeChange={setAddScope}
           onPriorityChange={(v: TaskPriority) => setAddPriority(v)}
+          onDueDateChange={setAddDueDate}
           onSubmit={() => void submitAdd()}
           onCancel={cancelAdd}
           titleRef={titleRef}
@@ -420,7 +448,7 @@ export function TaskListPage() {
               <th style={{ width: '10ch' }}>STATUS</th>
               <th style={{ width: '8ch' }}>PRI</th>
               <th style={{ width: '8ch' }}>STAFF</th>
-              <th style={{ width: '5ch' }}>AGE</th>
+              <th style={{ width: '7ch' }}>DUE</th>
             </tr>
           </thead>
           <tbody>

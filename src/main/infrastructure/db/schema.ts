@@ -1,21 +1,12 @@
 import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-/** Clients - the organizations or individuals who hire the firm. */
-export const clients = sqliteTable('clients', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  createdAt: text('created_at').notNull()
-})
-
-/** Projects - the top-level engagement, linked to a client. */
+/** Projects - the top-level engagement. Client information is kept off-system. */
 export const projects = sqliteTable('projects', {
   id: text('id').primaryKey(),
-  clientId: text('client_id')
-    .notNull()
-    .references(() => clients.id),
   name: text('name').notNull(),
   type: text('type').notNull(), // ProjectType
   status: text('status').notNull(), // ProjectStatus
+  dueDate: text('due_date').notNull(),
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
@@ -25,6 +16,8 @@ export const projects = sqliteTable('projects', {
  * Subprojects - optional intermediate level within a project.
  * Used for contests (Candidate Campaigns), bills/issues (Legislative Advocacy),
  * or any finer-grained grouping within a project.
+ * The auto-created default subproject is named "None" and has a null due_date,
+ * which inherits the parent project's due date at display time.
  */
 export const subprojects = sqliteTable('subprojects', {
   id: text('id').primaryKey(),
@@ -32,6 +25,7 @@ export const subprojects = sqliteTable('subprojects', {
     .notNull()
     .references(() => projects.id),
   name: text('name').notNull(),
+  dueDate: text('due_date'), // null for default "None" subproject - inherits from parent project
   createdAt: text('created_at').notNull()
 })
 
@@ -70,6 +64,7 @@ export const deliverables = sqliteTable('deliverables', {
  * Tasks - the atomic unit of work assigned to a project.
  * Must be scoped to a subproject (every project has a default "None" subproject).
  * Optionally assigned to a staff member.
+ * Due date is required on all tasks.
  */
 export const tasks = sqliteTable('tasks', {
   id: text('id').primaryKey(),
@@ -84,15 +79,12 @@ export const tasks = sqliteTable('tasks', {
   scope: text('scope').notNull(), // TaskScope
   status: text('status').notNull(), // TaskStatus
   priority: text('priority').notNull(), // TaskPriority
-  dueDate: text('due_date'),
+  dueDate: text('due_date').notNull(),
   notes: text('notes'),
   closedAt: text('closed_at'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })
-
-export type Client = typeof clients.$inferSelect
-export type NewClient = typeof clients.$inferInsert
 
 export type Project = typeof projects.$inferSelect
 export type NewProject = typeof projects.$inferInsert

@@ -23,7 +23,7 @@ type TaskRow = {
   subprojectName: string | null
   staffId: string | null
   staffName: string | null
-  dueDate: string | null
+  dueDate: string
   notes: string | null
   closedAt: string | null
   createdAt: string
@@ -80,7 +80,7 @@ export class TaskRepository implements TaskRepositoryPort {
         scope: input.scope,
         status: input.status,
         priority: input.priority,
-        dueDate: input.dueDate ?? null,
+        dueDate: input.dueDate,
         notes: input.notes ?? null,
         closedAt: null,
         createdAt: now,
@@ -194,7 +194,7 @@ function buildTaskPatch(input: UpdateTaskInput, current: TaskDto, now: string) {
     staffId: input.staffId !== undefined ? input.staffId : current.staffId,
     status: input.status ?? current.status,
     priority: input.priority ?? current.priority,
-    dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate,
+    dueDate: input.dueDate ?? current.dueDate,
     notes: input.notes !== undefined ? input.notes : current.notes,
     closedAt,
     updatedAt: now

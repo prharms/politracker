@@ -1,40 +1,9 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "cc3e617b-2b58-4b9b-81ae-429561fa3281",
+  "id": "8ddd7860-1a03-4700-9793-6bdf7cd6589c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "clients": {
-      "name": "clients",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "deliverables": {
       "name": "deliverables",
       "columns": {
@@ -179,13 +148,6 @@
           "notNull": true,
           "autoincrement": false
         },
-        "client_id": {
-          "name": "client_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "name": {
           "name": "name",
           "type": "text",
@@ -202,6 +164,13 @@
         },
         "status": {
           "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "due_date": {
+          "name": "due_date",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -230,21 +199,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "projects_client_id_clients_id_fk": {
-          "name": "projects_client_id_clients_id_fk",
-          "tableFrom": "projects",
-          "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -318,6 +273,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "due_date": {
+          "name": "due_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "text",
@@ -367,7 +329,7 @@
           "name": "subproject_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "staff_id": {
@@ -409,7 +371,7 @@
           "name": "due_date",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "notes": {

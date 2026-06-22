@@ -9,6 +9,14 @@ import type {
 } from '../../../shared/dtos/subproject-dto'
 import { randomUUID } from 'crypto'
 
+type SubprojectRow = {
+  id: string
+  projectId: string
+  name: string
+  dueDate: string | null
+  createdAt: string
+}
+
 /** Drizzle-backed SQLite repository for subprojects. */
 export class SubprojectRepository implements SubprojectRepositoryPort {
   /** Construct with a Drizzle database instance. */
@@ -17,35 +25,50 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
   /** Return all subprojects, optionally filtered by project. */
   list(projectId?: string): SubprojectDto[] {
     const rows = projectId
-      ? this.db
+      ? (this.db
           .select()
           .from(subprojects)
           .where(eq(subprojects.projectId, projectId))
           .orderBy(subprojects.name)
-          .all()
-      : this.db.select().from(subprojects).orderBy(subprojects.name).all()
-    return rows.map(this.toDto)
+          .all() as SubprojectRow[])
+      : (this.db.select().from(subprojects).orderBy(subprojects.name).all() as SubprojectRow[])
+    return rows.map(toDto)
   }
 
   /** Persist a new subproject and return the saved row. */
   create(input: NewSubprojectInput): SubprojectDto {
     const now = new Date().toISOString()
-    const row = {
+    const row: SubprojectRow = {
       id: randomUUID(),
       projectId: input.projectId,
       name: input.name,
+      dueDate: input.dueDate ?? null,
       createdAt: now
     }
     this.db.insert(subprojects).values(row).run()
-    return this.toDto(row)
+    return toDto(row)
   }
 
-  /** Update subproject name and return the updated row. */
+  /** Update subproject fields and return the updated row. */
   update(id: string, input: UpdateSubprojectInput): SubprojectDto {
-    this.db.update(subprojects).set({ name: input.name }).where(eq(subprojects.id, id)).run()
-    const row = this.db.select().from(subprojects).where(eq(subprojects.id, id)).get()
-    if (!row) throw new Error(`Subproject ${id} not found`)
-    return this.toDto(row)
+    const current = this.db.select().from(subprojects).where(eq(subprojects.id, id)).get() as
+      | SubprojectRow
+      | undefined
+    if (!current) throw new Error(`Subproject ${id} not found`)
+    this.db
+      .update(subprojects)
+      .set({
+        name: input.name ?? current.name,
+        dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate
+      })
+      .where(eq(subprojects.id, id))
+      .run()
+    const updated = this.db
+      .select()
+      .from(subprojects)
+      .where(eq(subprojects.id, id))
+      .get() as SubprojectRow
+    return toDto(updated)
   }
 
   /** Delete a subproject. Returns false with reason if it has tasks. */
@@ -69,19 +92,15 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
       .where(eq(tasks.subprojectId, subprojectId))
       .all().length
   }
+}
 
-  /** Map a raw row to a SubprojectDto. */
-  private toDto(row: {
-    id: string
-    projectId: string
-    name: string
-    createdAt: string
-  }): SubprojectDto {
-    return {
-      id: row.id,
-      projectId: row.projectId,
-      name: row.name,
-      createdAt: row.createdAt
-    }
+/** Map a raw subproject row to a SubprojectDto. */
+function toDto(row: SubprojectRow): SubprojectDto {
+  return {
+    id: row.id,
+    projectId: row.projectId,
+    name: row.name,
+    dueDate: row.dueDate,
+    createdAt: row.createdAt
   }
 }

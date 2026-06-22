@@ -5,11 +5,10 @@ import type { ProjectDto } from '../../../../shared/dtos/project-dto'
 
 const stubProject: ProjectDto = {
   id: 'proj-1',
-  clientId: 'client-1',
-  clientName: 'Smith for Governor',
   name: 'CA Governor 2026',
   type: 'Candidate Campaign',
   status: 'Active',
+  dueDate: '2026-11-03',
   notes: null,
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z'

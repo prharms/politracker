@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  makeListClientsUseCase,
-  makeCreateClientUseCase,
-  makeUpdateClientUseCase,
-  makeDeleteClientUseCase,
   makeListSubprojectsUseCase,
   makeCreateSubprojectUseCase,
   makeUpdateSubprojectUseCase,
@@ -26,24 +22,6 @@ import {
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 
 const mockDb = {} as BetterSQLite3Database
-
-describe('container factories - clients', () => {
-  it('makeListClientsUseCase returns a use case with an execute method', () => {
-    expect(typeof makeListClientsUseCase(mockDb).execute).toBe('function')
-  })
-
-  it('makeCreateClientUseCase returns a use case with an execute method', () => {
-    expect(typeof makeCreateClientUseCase(mockDb).execute).toBe('function')
-  })
-
-  it('makeUpdateClientUseCase returns a use case with an execute method', () => {
-    expect(typeof makeUpdateClientUseCase(mockDb).execute).toBe('function')
-  })
-
-  it('makeDeleteClientUseCase returns a use case with an execute method', () => {
-    expect(typeof makeDeleteClientUseCase(mockDb).execute).toBe('function')
-  })
-})
 
 describe('container factories - subprojects', () => {
   it('makeListSubprojectsUseCase returns a use case with an execute method', () => {

@@ -7,17 +7,22 @@ import type { SubprojectRepositoryPort } from '../../ports/subproject-repository
 
 const stub = {
   id: 'p1',
-  clientId: 'c1',
-  clientName: 'ACME',
   name: 'CA Gov 2026',
   type: 'Candidate Campaign' as const,
   status: 'Active' as const,
+  dueDate: '2026-11-03',
   notes: null,
   createdAt: '2026-01-01',
   updatedAt: '2026-01-01'
 }
 
-const subprojectStub = { id: 'sp1', projectId: 'p1', name: 'None', createdAt: '2026-01-01' }
+const subprojectStub = {
+  id: 'sp1',
+  projectId: 'p1',
+  name: 'None',
+  dueDate: null,
+  createdAt: '2026-01-01'
+}
 
 const mockRepo = (): ProjectRepositoryPort => ({
   listAll: vi.fn().mockReturnValue([stub]),
@@ -41,10 +46,10 @@ describe('CreateProjectUseCase', () => {
     const repo = mockRepo()
     const subRepo = mockSubprojectRepo()
     const result = new CreateProjectUseCase(repo, subRepo).execute({
-      clientId: 'c1',
       name: 'CA Gov 2026',
       type: 'Candidate Campaign',
-      status: 'Active'
+      status: 'Active',
+      dueDate: '2026-11-03'
     })
     expect(repo.create).toHaveBeenCalled()
     expect(result).toEqual(stub)
@@ -54,10 +59,10 @@ describe('CreateProjectUseCase', () => {
     const repo = mockRepo()
     const subRepo = mockSubprojectRepo()
     new CreateProjectUseCase(repo, subRepo).execute({
-      clientId: 'c1',
       name: 'CA Gov 2026',
       type: 'Candidate Campaign',
-      status: 'Active'
+      status: 'Active',
+      dueDate: '2026-11-03'
     })
     expect(subRepo.create).toHaveBeenCalledWith({ projectId: 'p1', name: 'None' })
   })
@@ -65,23 +70,23 @@ describe('CreateProjectUseCase', () => {
   it('throws when name is empty', () => {
     expect(() =>
       new CreateProjectUseCase(mockRepo(), mockSubprojectRepo()).execute({
-        clientId: 'c1',
         name: '  ',
         type: 'Candidate Campaign',
-        status: 'Active'
+        status: 'Active',
+        dueDate: '2026-11-03'
       })
     ).toThrow('Project name must not be empty')
   })
 
-  it('throws when clientId is empty', () => {
+  it('throws when due date is missing', () => {
     expect(() =>
       new CreateProjectUseCase(mockRepo(), mockSubprojectRepo()).execute({
-        clientId: '  ',
         name: 'X',
         type: 'Candidate Campaign',
-        status: 'Active'
+        status: 'Active',
+        dueDate: ''
       })
-    ).toThrow('Client id must not be empty')
+    ).toThrow('Due date is required')
   })
 })
 

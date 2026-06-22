@@ -1,9 +1,3 @@
-CREATE TABLE `clients` (
-	`id` text PRIMARY KEY NOT NULL,
-	`name` text NOT NULL,
-	`created_at` text NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE `deliverables` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
@@ -24,14 +18,13 @@ CREATE TABLE `deliverables` (
 --> statement-breakpoint
 CREATE TABLE `projects` (
 	`id` text PRIMARY KEY NOT NULL,
-	`client_id` text NOT NULL,
 	`name` text NOT NULL,
 	`type` text NOT NULL,
 	`status` text NOT NULL,
+	`due_date` text NOT NULL,
 	`notes` text,
 	`created_at` text NOT NULL,
-	`updated_at` text NOT NULL,
-	FOREIGN KEY (`client_id`) REFERENCES `clients`(`id`) ON UPDATE no action ON DELETE no action
+	`updated_at` text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE `staff` (
@@ -46,6 +39,7 @@ CREATE TABLE `subprojects` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
 	`name` text NOT NULL,
+	`due_date` text,
 	`created_at` text NOT NULL,
 	FOREIGN KEY (`project_id`) REFERENCES `projects`(`id`) ON UPDATE no action ON DELETE no action
 );
@@ -53,13 +47,13 @@ CREATE TABLE `subprojects` (
 CREATE TABLE `tasks` (
 	`id` text PRIMARY KEY NOT NULL,
 	`project_id` text NOT NULL,
-	`subproject_id` text,
+	`subproject_id` text NOT NULL,
 	`staff_id` text,
 	`title` text NOT NULL,
 	`scope` text NOT NULL,
 	`status` text NOT NULL,
 	`priority` text NOT NULL,
-	`due_date` text,
+	`due_date` text NOT NULL,
 	`notes` text,
 	`closed_at` text,
 	`created_at` text NOT NULL,

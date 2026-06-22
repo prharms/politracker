@@ -1,19 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { TaskListFilters, NewTaskInput, UpdateTaskInput } from '../shared/dtos/task-dto'
 import type { NewStaffInput, UpdateStaffInput } from '../shared/dtos/staff-dto'
-import type { NewClientInput, UpdateClientInput } from '../shared/dtos/client-dto'
 import type { NewSubprojectInput, UpdateSubprojectInput } from '../shared/dtos/subproject-dto'
 import type { NewProjectInput, UpdateProjectInput } from '../shared/dtos/project-dto'
 
 /** Expose typed API to renderer process via context bridge. */
 contextBridge.exposeInMainWorld('api', {
-  clients: {
-    list: () => ipcRenderer.invoke('clients:list'),
-    create: (input: NewClientInput) => ipcRenderer.invoke('clients:create', input),
-    update: (id: string, input: UpdateClientInput) =>
-      ipcRenderer.invoke('clients:update', id, input),
-    delete: (id: string) => ipcRenderer.invoke('clients:delete', id)
-  },
   subprojects: {
     list: (projectId?: string) => ipcRenderer.invoke('subprojects:list', projectId),
     create: (input: NewSubprojectInput) => ipcRenderer.invoke('subprojects:create', input),

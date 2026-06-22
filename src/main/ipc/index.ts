@@ -1,13 +1,7 @@
-import { registerClientHandlers } from './handlers/client-handlers'
 import { registerSubprojectHandlers } from './handlers/subproject-handlers'
 import { registerStaffHandlers } from './handlers/staff-handlers'
 import { registerProjectHandlers } from './handlers/project-handlers'
 import { registerTaskHandlers } from './handlers/task-handlers'
-
-import type { ListClientsUseCase } from '../application/use-cases/clients/list-clients-use-case'
-import type { CreateClientUseCase } from '../application/use-cases/clients/create-client-use-case'
-import type { UpdateClientUseCase } from '../application/use-cases/clients/update-client-use-case'
-import type { DeleteClientUseCase } from '../application/use-cases/clients/delete-client-use-case'
 
 import type { ListSubprojectsUseCase } from '../application/use-cases/subprojects/list-subprojects-use-case'
 import type { CreateSubprojectUseCase } from '../application/use-cases/subprojects/create-subproject-use-case'
@@ -32,10 +26,6 @@ import type { DeleteTaskUseCase } from '../application/use-cases/tasks/delete-ta
 
 /** Register all IPC handlers. Called once from src/main/index.ts at startup. */
 export function registerAllHandlers(
-  listClients: ListClientsUseCase,
-  createClient: CreateClientUseCase,
-  updateClient: UpdateClientUseCase,
-  deleteClient: DeleteClientUseCase,
   listSubprojects: ListSubprojectsUseCase,
   createSubproject: CreateSubprojectUseCase,
   updateSubproject: UpdateSubprojectUseCase,
@@ -54,7 +44,6 @@ export function registerAllHandlers(
   updateTask: UpdateTaskUseCase,
   deleteTask: DeleteTaskUseCase
 ): void {
-  registerClientHandlers(listClients, createClient, updateClient, deleteClient)
   registerSubprojectHandlers(listSubprojects, createSubproject, updateSubproject, deleteSubproject)
   registerStaffHandlers(listStaff, createStaff, updateStaff, updateStaffStatus, deleteStaff)
   registerProjectHandlers(listProjects, createProject, updateProject, deleteProject)

@@ -4,10 +4,6 @@ vi.mock('electron', () => ({ ipcMain: { handle: vi.fn() } }))
 
 import { ipcMain } from 'electron'
 import { registerAllHandlers } from './index'
-import type { ListClientsUseCase } from '../application/use-cases/clients/list-clients-use-case'
-import type { CreateClientUseCase } from '../application/use-cases/clients/create-client-use-case'
-import type { UpdateClientUseCase } from '../application/use-cases/clients/update-client-use-case'
-import type { DeleteClientUseCase } from '../application/use-cases/clients/delete-client-use-case'
 import type { ListSubprojectsUseCase } from '../application/use-cases/subprojects/list-subprojects-use-case'
 import type { CreateSubprojectUseCase } from '../application/use-cases/subprojects/create-subproject-use-case'
 import type { UpdateSubprojectUseCase } from '../application/use-cases/subprojects/update-subproject-use-case'
@@ -35,10 +31,6 @@ describe('registerAllHandlers', () => {
 
   it('registers handlers for all channels', () => {
     registerAllHandlers(
-      uc<ListClientsUseCase>(),
-      uc<CreateClientUseCase>(),
-      uc<UpdateClientUseCase>(),
-      uc<DeleteClientUseCase>(),
       uc<ListSubprojectsUseCase>(),
       uc<CreateSubprojectUseCase>(),
       uc<UpdateSubprojectUseCase>(),
@@ -60,7 +52,6 @@ describe('registerAllHandlers', () => {
     const channels = (ipcMain.handle as ReturnType<typeof vi.fn>).mock.calls.map(
       (c: unknown[]) => c[0]
     )
-    expect(channels).toContain('clients:list')
     expect(channels).toContain('subprojects:list')
     expect(channels).toContain('staff:list')
     expect(channels).toContain('projects:list')

@@ -3,7 +3,6 @@ import { MemoryRouter, Routes, Route, Navigate } from 'react-router-dom'
 import styles from './App.module.css'
 import { NavBar } from './components/NavBar'
 import { HomePage } from './pages/HomePage'
-import { ClientsPage } from './pages/ClientsPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { StaffPage } from './pages/StaffPage'
 import { TaskListPage } from './pages/TaskListPage'
@@ -21,7 +20,6 @@ export default function App(): React.JSX.Element {
         <main className={styles.main}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/clients" element={<ClientsPage />} />
             <Route path="/projects" element={<ProjectsPage />} />
             <Route path="/staff" element={<StaffPage />} />
             <Route path="/tasks" element={<TaskListPage />} />

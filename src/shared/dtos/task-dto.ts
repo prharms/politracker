@@ -13,7 +13,7 @@ export interface TaskDto {
   subprojectName: string | null
   staffId: string | null
   staffName: string | null
-  dueDate: string | null
+  dueDate: string
   notes: string | null
   closedAt: string | null
   createdAt: string
@@ -36,7 +36,7 @@ export interface NewTaskInput {
   scope: TaskScope
   status: TaskStatus
   priority: TaskPriority
-  dueDate?: string
+  dueDate: string
   notes?: string
 }
 
@@ -47,7 +47,7 @@ export interface UpdateTaskInput {
   staffId?: string | null
   status?: TaskStatus
   priority?: TaskPriority
-  dueDate?: string | null
+  dueDate?: string
   notes?: string | null
 }
 
