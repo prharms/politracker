@@ -104,17 +104,16 @@ describe('TaskRepository', () => {
     expect(repo.findById('nonexistent')).toBeNull()
   })
 
-  it('updateStatus changes the status and sets closedAt', () => {
+  it('updateStatus changes the status and sets closedAt when transitioning to Complete', () => {
     const created = repo.create(newTask())
-    const closedAt = new Date().toISOString()
-    const updated = repo.updateStatus(created.id, 'Complete', closedAt)
+    const updated = repo.updateStatus(created.id, 'Complete')
     expect(updated.status).toBe('Complete')
-    expect(updated.closedAt).toBe(closedAt)
+    expect(updated.closedAt).not.toBeNull()
   })
 
-  it('updateStatus clears closedAt when status is not closed', () => {
+  it('updateStatus preserves closedAt when status is not Complete', () => {
     const created = repo.create(newTask())
-    const updated = repo.updateStatus(created.id, 'Active', null)
+    const updated = repo.updateStatus(created.id, 'Active')
     expect(updated.status).toBe('Active')
     expect(updated.closedAt).toBeNull()
   })
@@ -139,7 +138,7 @@ describe('TaskRepository', () => {
   })
 
   it('update throws when record does not exist', () => {
-    expect(() => repo.update('nonexistent', { title: 'X' })).toThrow('Task record not found')
+    expect(() => repo.update('nonexistent', { title: 'X' })).toThrow('Task not found: nonexistent')
   })
 
   it('delete removes the task', () => {

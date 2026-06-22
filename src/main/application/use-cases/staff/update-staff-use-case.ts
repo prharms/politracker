@@ -1,3 +1,4 @@
+import { validateStaffName } from '../../../domain/staff'
 import type { StaffRepositoryPort } from '../../ports/staff-repository-port'
 import type { StaffDto, UpdateStaffInput } from '../../../../shared/dtos/staff-dto'
 
@@ -9,9 +10,7 @@ export class UpdateStaffUseCase {
   /** Validate input, apply the update, and return the updated record. */
   execute(id: string, input: UpdateStaffInput): StaffDto {
     if (!id.trim()) throw new Error('Staff id must not be empty')
-    if (input.name !== undefined && !input.name.trim()) {
-      throw new Error('Staff name must not be empty')
-    }
+    if (input.name !== undefined) validateStaffName(input.name)
     return this.repo.update(id, input)
   }
 }

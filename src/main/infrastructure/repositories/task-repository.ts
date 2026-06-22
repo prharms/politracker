@@ -2,6 +2,8 @@ import { eq, and, count } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { randomUUID } from 'crypto'
 import { tasks, projects, subprojects, staff } from '../db/schema'
+import { TaskNotFoundError } from '../../domain/errors'
+import { resolveClosedAt } from '../../domain/task'
 import type { TaskRepositoryPort } from '../../application/ports/task-repository-port'
 import type {
   TaskDto,
@@ -94,7 +96,7 @@ export class TaskRepository implements TaskRepositoryPort {
   update(id: string, input: UpdateTaskInput): TaskDto {
     const now = new Date().toISOString()
     const current = this.findById(id)
-    if (!current) throw new Error(`Task record not found: ${id}`)
+    if (!current) throw new TaskNotFoundError(id)
     this.db
       .update(tasks)
       .set(buildTaskPatch(input, current, now))
@@ -103,9 +105,12 @@ export class TaskRepository implements TaskRepositoryPort {
     return this.findById(id)!
   }
 
-  /** Update the status (and closedAt) of a task and return the updated enriched row. */
-  updateStatus(id: string, status: string, closedAt: string | null): TaskDto {
+  /** Update task status, compute closedAt via domain rule, and return the updated enriched row. */
+  updateStatus(id: string, status: TaskStatus): TaskDto {
     const now = new Date().toISOString()
+    const current = this.findById(id)
+    if (!current) throw new TaskNotFoundError(id)
+    const closedAt = resolveClosedAt(status, current.closedAt, now)
     this.db.update(tasks).set({ status, closedAt, updatedAt: now }).where(eq(tasks.id, id)).run()
     return this.findById(id)!
   }
@@ -180,14 +185,12 @@ function toDto(row: TaskRow): TaskDto {
   }
 }
 
-/** Return true when the given status represents a completed state. */
-function isCompleteStatus(status: string): boolean {
-  return status === 'Complete'
-}
-
 /** Build the column patch object for a task update. */
 function buildTaskPatch(input: UpdateTaskInput, current: TaskDto, now: string) {
-  const closedAt = input.status && isCompleteStatus(input.status) ? now : current.closedAt
+  const newStatus = (input.status ?? current.status) as TaskStatus
+  const closedAt = input.status
+    ? resolveClosedAt(newStatus, current.closedAt, now)
+    : current.closedAt
   return {
     title: input.title ?? current.title,
     scope: input.scope ?? current.scope,

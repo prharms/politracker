@@ -67,7 +67,9 @@ describe('ProjectRepository', () => {
   })
 
   it('update throws when the project does not exist', () => {
-    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow('Project record not found')
+    expect(() => repo.update('nonexistent', { name: 'X' })).toThrow(
+      'Project not found: nonexistent'
+    )
   })
 
   it('delete removes the project', () => {

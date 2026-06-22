@@ -1,3 +1,4 @@
+import type { TaskStatus } from '../../../shared/constants'
 import type {
   TaskDto,
   TaskListFilters,
@@ -16,11 +17,19 @@ export interface TaskRepositoryPort {
   /** Persist a new task and return the enriched row. */
   create(input: NewTaskInput): TaskDto
 
-  /** Update task fields and return the updated enriched row. */
+  /**
+   * Update task fields and return the updated enriched row.
+   * @throws {TaskNotFoundError} if the task does not exist
+   */
   update(id: string, input: UpdateTaskInput): TaskDto
 
-  /** Update task status only and return the updated enriched row. */
-  updateStatus(id: string, status: string, closedAt: string | null): TaskDto
+  /**
+   * Update task status and apply the closedAt domain rule, then return the updated enriched row.
+   * The repository is responsible for computing closedAt via resolveClosedAt - callers
+   * must not pass closedAt explicitly.
+   * @throws {TaskNotFoundError} if the task does not exist
+   */
+  updateStatus(id: string, status: TaskStatus): TaskDto
 
   /** Delete a task by id. */
   delete(id: string): void

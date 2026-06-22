@@ -1,0 +1,140 @@
+---
+description: The domain layer must be populated with entities, value objects, and domain errors before any other layer is written. Business rules live in domain, not in repositories or use cases.
+globs:
+alwaysApply: true
+---
+
+# Domain Layer Is Mandatory - Never Empty
+
+## ZERO DISCRETION POLICY
+
+This rule has no exceptions. There is no scenario - not a "simple" entity,
+not a CRUD-only feature, not time pressure - that permits leaving the domain
+layer empty or skipping domain types and errors.
+
+Prohibited judgement calls:
+- "This entity is simple CRUD with no logic, I'll skip the domain file." - No. Create the interface and a domain error. Even thin domain models must exist.
+- "I'll put the business rule in the repository for now." - No. Business rules belong in domain. Repositories are infrastructure - they persist and fetch. They must not own logic.
+- "The DTO is close enough to the domain entity, I'll use it instead." - No. DTOs carry joined/presentation data. Domain entities carry only the entity's own properties. They are not the same type.
+- "I'll come back and populate domain later." - No. Domain is written first, before the repository, before the use case.
+- "There's no logic yet, so there's nothing to put in domain." - No. The interface type itself belongs in domain even if there are no rules today.
+
+---
+
+## What belongs in the domain layer
+
+### Entity interfaces
+
+Every entity in the application has a corresponding interface in
+`src/main/domain/[entity].ts`. The interface carries only the entity's own
+persistent properties - no joined fields, no display-only fields.
+
+```typescript
+// CORRECT - domain entity owns its own data only
+export interface Task {
+  readonly id: string
+  readonly title: string
+  readonly status: TaskStatus
+  readonly projectId: string   // foreign key - NOT projectName
+  readonly staffId: string | null   // foreign key - NOT staffName
+  // ... other own properties
+}
+
+// WRONG - domain entity should not contain joined display data
+export interface Task {
+  readonly projectName: string  // this belongs in a DTO, not the domain entity
+  readonly staffName: string | null  // same
+}
+```
+
+### Domain errors
+
+Every entity has at least one domain error for "not found." Additional errors
+cover each invariant that can be violated.
+
+```typescript
+// src/main/domain/errors.ts
+export class TaskNotFoundError extends Error {
+  constructor(id: string) {
+    super(`Task not found: ${id}`)
+    this.name = 'TaskNotFoundError'
+  }
+}
+```
+
+Repositories MUST throw typed domain errors, never raw `Error` instances:
+
+```typescript
+// WRONG - raw Error in infrastructure
+throw new Error(`Task record not found: ${id}`)
+
+// CORRECT - typed domain error
+import { TaskNotFoundError } from '../../domain/errors'
+throw new TaskNotFoundError(id)
+```
+
+### Business rule functions
+
+Any rule that governs how an entity changes state belongs in `domain/` as a
+pure function. This includes:
+
+- Setting `closedAt` when a task transitions to Complete
+- Deriving defaults (initials from name, status defaults)
+- Validation rules (name must not be empty)
+- Any condition that controls a state transition
+
+```typescript
+// CORRECT - domain function owns the closedAt rule
+// src/main/domain/task.ts
+export function resolveClosedAt(
+  newStatus: TaskStatus,
+  currentClosedAt: string | null,
+  now: string
+): string | null {
+  return newStatus === 'Complete' ? now : currentClosedAt
+}
+```
+
+---
+
+## What does NOT belong in the domain layer
+
+- Database queries or ORM calls - those are infrastructure
+- HTTP calls or IPC calls - those are infrastructure/presentation
+- DTO construction with joined data - that is an infrastructure/use-case concern
+- React components or hooks - those are renderer
+
+---
+
+## File structure for a new entity
+
+When adding entity `Foo`, create these domain files before writing any other layer:
+
+```
+src/main/domain/foo.ts      - Foo interface + business rule functions
+src/main/domain/errors.ts   - add FooNotFoundError (and other Foo errors)
+src/main/domain/index.ts    - re-export Foo and its errors
+```
+
+---
+
+## The cost of skipping this
+
+When business rules live in repositories:
+- The same rule must be tested through a database fixture (expensive, slow)
+- The rule cannot be tested in isolation without spinning up infrastructure
+- The rule is invisible to the application layer and cannot be reused
+- Future developers cannot find where the rule lives
+
+When domain types do not exist:
+- Use cases and ports must reference DTOs (presentation objects) as their
+  primary domain model, which conflates two concerns that must be separate
+- There is no single authoritative definition of what the entity IS
+
+---
+
+## See also
+
+- `clean-architecture-imports.mdc` - import rules for each layer
+- `hexagonal-feature` skill - implementation order (domain is Step 1, not optional)
+- ADR-0001 - why hexagonal architecture was chosen

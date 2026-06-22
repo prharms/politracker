@@ -11,10 +11,16 @@ export interface StaffRepositoryPort {
   /** Persist a new staff record and return it. */
   create(input: NewStaffInput): StaffDto
 
-  /** Update a staff member's name and/or initials and return the updated record. */
+  /**
+   * Update a staff member's name and/or initials and return the updated record.
+   * @throws {StaffNotFoundError} if the staff member does not exist
+   */
   update(id: string, input: UpdateStaffInput): StaffDto
 
-  /** Update a staff member's active status and return the updated record. */
+  /**
+   * Update a staff member's active status and return the updated record.
+   * @throws {StaffNotFoundError} if the staff member does not exist
+   */
   updateStatus(id: string, status: 'Active' | 'Inactive'): StaffDto
 
   /** Delete a staff member by id. */
