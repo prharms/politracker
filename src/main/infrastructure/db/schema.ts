@@ -25,6 +25,7 @@ export const subprojects = sqliteTable('subprojects', {
     .notNull()
     .references(() => projects.id),
   name: text('name').notNull(),
+  status: text('status').notNull().default('Active'), // SubprojectStatus
   dueDate: text('due_date'), // null for default "None" subproject - inherits from parent project
   createdAt: text('created_at').notNull()
 })

@@ -1,8 +1,11 @@
+import type { SubprojectStatus } from '../constants'
+
 /** A subproject row as returned to the renderer. */
 export interface SubprojectDto {
   id: string
   projectId: string
   name: string
+  status: SubprojectStatus
   /** Null for the auto-created "None" subproject, which inherits due date from the parent project. */
   dueDate: string | null
   createdAt: string
@@ -12,6 +15,7 @@ export interface SubprojectDto {
 export interface NewSubprojectInput {
   projectId: string
   name: string
+  status?: SubprojectStatus
   /** Optional - auto-created "None" subproject omits this and inherits from the parent project. */
   dueDate?: string
 }
@@ -19,6 +23,7 @@ export interface NewSubprojectInput {
 /** Fields that can be updated on a subproject. */
 export interface UpdateSubprojectInput {
   name?: string
+  status?: SubprojectStatus
   dueDate?: string | null
 }
 

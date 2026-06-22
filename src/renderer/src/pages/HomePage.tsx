@@ -12,14 +12,16 @@ import type { SubprojectDto } from '../../../shared/dtos/subproject-dto'
 
 // ── Module-level helpers ─────────────────────────────────────────────────────
 
-/** Return open (non-closed) tasks sorted soonest due first. */
+/** Return open (non-complete) tasks sorted soonest due first. */
 function openTasks(tasks: TaskDto[]): TaskDto[] {
-  return tasks.filter(t => t.status !== 'Closed').sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+  return tasks
+    .filter(t => t.status !== 'Complete')
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
 }
 
 /** Return open tasks assigned to a specific staff member. */
 function staffOpenTasks(staffId: string, tasks: TaskDto[]): TaskDto[] {
-  return tasks.filter(t => t.staffId === staffId && t.status !== 'Closed')
+  return tasks.filter(t => t.staffId === staffId && t.status !== 'Complete')
 }
 
 /** Return the soonest due date among a task list, or null if empty. */

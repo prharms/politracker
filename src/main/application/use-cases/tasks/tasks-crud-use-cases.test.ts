@@ -8,7 +8,7 @@ const stub = {
   id: 't1',
   title: 'Research finances',
   scope: 'Full Memo' as const,
-  status: 'Backlog' as const,
+  status: 'Inactive' as const,
   priority: 'Normal' as const,
   projectId: 'p1',
   projectName: 'CA Gov 2026',
@@ -41,7 +41,7 @@ describe('CreateTaskUseCase', () => {
       subprojectId: 'sp1',
       title: 'Research finances',
       scope: 'Full Memo',
-      status: 'Backlog',
+      status: 'Inactive',
       priority: 'Normal',
       dueDate: '2026-11-03'
     })
@@ -56,7 +56,7 @@ describe('CreateTaskUseCase', () => {
         subprojectId: 'sp1',
         title: '  ',
         scope: 'Full Memo',
-        status: 'Backlog',
+        status: 'Inactive',
         priority: 'Normal',
         dueDate: '2026-11-03'
       })
@@ -70,7 +70,7 @@ describe('CreateTaskUseCase', () => {
         subprojectId: 'sp1',
         title: 'X',
         scope: 'Full Memo',
-        status: 'Backlog',
+        status: 'Inactive',
         priority: 'Normal',
         dueDate: '2026-11-03'
       })
@@ -84,7 +84,7 @@ describe('CreateTaskUseCase', () => {
         subprojectId: '  ',
         title: 'X',
         scope: 'Full Memo',
-        status: 'Backlog',
+        status: 'Inactive',
         priority: 'Normal',
         dueDate: '2026-11-03'
       })
@@ -98,7 +98,7 @@ describe('CreateTaskUseCase', () => {
         subprojectId: 'sp1',
         title: 'X',
         scope: 'Full Memo',
-        status: 'Backlog',
+        status: 'Inactive',
         priority: 'Normal',
         dueDate: ''
       })

@@ -103,7 +103,7 @@ describe('SubprojectRepository', () => {
       title: 'Task A',
       scope: 'Full Memo',
       priority: 'Normal',
-      status: 'Backlog',
+      status: 'Inactive',
       dueDate: '2026-11-03'
     })
     const result = repo.delete(sp.id)
@@ -122,7 +122,7 @@ describe('SubprojectRepository', () => {
       title: 'T1',
       scope: 'Full Memo',
       priority: 'Normal',
-      status: 'Backlog',
+      status: 'Inactive',
       dueDate: '2026-11-03'
     })
     expect(repo.countTasksBySubproject(sp.id)).toBe(1)

@@ -33,7 +33,7 @@ interface TaskItemProps {
 
 /** A single task row rendered inside the task table body. */
 function TaskItem({ task, selected, onSelect }: TaskItemProps) {
-  const closed = task.status === 'Closed'
+  const closed = task.status === 'Complete'
   const urgent = task.priority === 'Urgent' && !closed
   const overdue = !closed && isOverdue(task.dueDate)
   const project =
@@ -207,6 +207,7 @@ export function TaskListPage() {
   const { tasks, loading, createTask, deleteTask } = useTasks(filters)
   const { staff, projects } = useFilterOptions()
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [showAll, setShowAll] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [addProjectId, setAddProjectId] = useState('')
   const [addSubprojectId, setAddSubprojectId] = useState('')
@@ -282,7 +283,7 @@ export function TaskListPage() {
       staffId: addStaffId || undefined,
       title: addTitle.trim(),
       scope: addScope,
-      status: 'Backlog',
+      status: 'Inactive',
       priority: addPriority,
       dueDate: addDueDate
     })
@@ -392,6 +393,13 @@ export function TaskListPage() {
             </option>
           ))}
         </select>
+        <button
+          className={styles.confirmNo}
+          style={{ whiteSpace: 'nowrap', fontSize: '20px' }}
+          onClick={() => setShowAll(v => !v)}
+        >
+          {showAll ? '[ACTIVE ONLY]' : '[SHOW ALL]'}
+        </button>
       </div>
 
       {errorMsg && (
@@ -445,21 +453,23 @@ export function TaskListPage() {
               <th>TITLE</th>
               <th style={{ width: '16ch' }}>PROJECT</th>
               <th style={{ width: '12ch' }}>SCOPE</th>
-              <th style={{ width: '10ch' }}>STATUS</th>
+              <th style={{ width: '10ch', whiteSpace: 'nowrap' }}>STATUS</th>
               <th style={{ width: '8ch' }}>PRI</th>
               <th style={{ width: '8ch' }}>STAFF</th>
-              <th style={{ width: '7ch' }}>DUE</th>
+              <th style={{ width: '9ch', whiteSpace: 'nowrap' }}>DUE</th>
             </tr>
           </thead>
           <tbody>
-            {tasks.map((task, idx) => (
-              <TaskItem
-                key={task.id}
-                task={task}
-                selected={idx === selectedIdx && !showAdd}
-                onSelect={() => setSelectedIdx(idx)}
-              />
-            ))}
+            {tasks
+              .filter(t => showAll || t.status !== 'Complete')
+              .map((task, idx) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  selected={idx === selectedIdx && !showAdd}
+                  onSelect={() => setSelectedIdx(idx)}
+                />
+              ))}
           </tbody>
         </table>
       </div>

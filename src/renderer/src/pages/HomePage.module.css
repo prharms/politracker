@@ -143,7 +143,9 @@
 /* Project panel */
 
 .typeCol {
-  width: 12ch;
+  width: 14ch;
+  white-space: nowrap;
+  overflow: hidden;
   font-size: 18px;
   color: #888888;
 }
@@ -166,19 +168,25 @@
 }
 
 .staffCol {
-  width: 10ch;
+  width: 11ch;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .dueCol {
-  width: 7ch;
+  width: 9ch;
+  white-space: nowrap;
 }
 
 .statusCol {
-  width: 12ch;
+  width: 13ch;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .priCol {
-  width: 8ch;
+  width: 10ch;
+  white-space: nowrap;
 }
 
 .loading {

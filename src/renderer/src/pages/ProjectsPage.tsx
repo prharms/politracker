@@ -1,10 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useProjects } from '../../hooks/use-projects'
 import { useSubprojects } from '../../hooks/use-subprojects'
-import { PROJECT_TYPES, PROJECT_STATUSES } from '../../../shared/constants'
+import { PROJECT_TYPES, PROJECT_STATUSES, SUBPROJECT_STATUSES } from '../../../shared/constants'
 import { formatDue, isOverdue } from '../../../shared/utils/days-until'
 import styles from './CrudPage.module.css'
 import type { ProjectDto } from '../../../shared/dtos/project-dto'
+
+/** Advance to the next value in a status cycle list. */
+function cycleStatus<T extends string>(current: T, values: readonly T[]): T {
+  const idx = values.indexOf(current)
+  return values[(idx + 1) % values.length]!
+}
+
+/** Return the CSS class name for a given status string. */
+function statusClass(status: string, activeClass: string, inactiveClass: string): string {
+  return status === 'Active' ? activeClass : inactiveClass
+}
+
+/** Return the toggle button label for a show-all / active-only control. */
+function showAllLabel(showAll: boolean): string {
+  return showAll ? '[ACTIVE ONLY]' : '[SHOW ALL]'
+}
 
 interface ConfirmDelete {
   id: string
@@ -22,6 +38,7 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
   const { subprojects, createSubproject, updateSubproject, deleteSubproject } =
     useSubprojects(projectId)
   const [showAdd, setShowAdd] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   const [addName, setAddName] = useState('')
   const [addDueDate, setAddDueDate] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -64,6 +81,13 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
     setEditingId(null)
   }, [editingId, editingValue, updateSubproject])
 
+  const cycleSubprojectStatus = useCallback(
+    async (id: string, current: (typeof SUBPROJECT_STATUSES)[number]) => {
+      await updateSubproject(id, { status: cycleStatus(current, SUBPROJECT_STATUSES) })
+    },
+    [updateSubproject]
+  )
+
   const confirmDeleteYes = useCallback(async () => {
     if (!confirmDelete) return
     const result = await deleteSubproject(confirmDelete.id)
@@ -76,6 +100,8 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
     return dueDate ?? projectDueDate
   }
 
+  const visibleSubprojects = showAll ? subprojects : subprojects.filter(s => s.status === 'Active')
+
   return (
     <div className={styles.subSection}>
       <div className={styles.subHeader}>
@@ -86,6 +112,13 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
           onClick={() => setShowAdd(v => !v)}
         >
           [A] ADD
+        </button>
+        <button
+          className={styles.hint}
+          style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+          onClick={() => setShowAll(v => !v)}
+        >
+          {showAllLabel(showAll)}
         </button>
       </div>
       {errorMsg && (
@@ -143,17 +176,18 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
           </button>
         </div>
       )}
-      {subprojects.length === 0 && <div className={styles.empty}>NO SUBPROJECTS</div>}
+      {visibleSubprojects.length === 0 && <div className={styles.empty}>NO SUBPROJECTS</div>}
       <table className={styles.dataTable}>
         <thead>
           <tr>
             <th>NAME</th>
-            <th style={{ width: '7ch' }}>DUE</th>
-            <th style={{ width: '6ch' }}>DEL</th>
+            <th style={{ width: '10ch', whiteSpace: 'nowrap' }}>STATUS</th>
+            <th style={{ width: '9ch', whiteSpace: 'nowrap' }}>DUE</th>
+            <th style={{ width: '6ch', whiteSpace: 'nowrap' }}>DEL</th>
           </tr>
         </thead>
         <tbody>
-          {subprojects.map(sub => {
+          {visibleSubprojects.map(sub => {
             const due = effectiveDue(sub.dueDate)
             const overdue = isOverdue(due)
             return (
@@ -183,11 +217,21 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
                     sub.name
                   )}
                 </td>
-                <td style={overdue ? { color: '#ff3333' } : undefined}>{formatDue(due)}</td>
+                <td
+                  className={statusClass(sub.status, styles.active, styles.inactive)}
+                  style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  title="Click to change status"
+                  onClick={() => void cycleSubprojectStatus(sub.id, sub.status)}
+                >
+                  {sub.status}
+                </td>
+                <td style={{ whiteSpace: 'nowrap', ...(overdue ? { color: '#ff3333' } : {}) }}>
+                  {formatDue(due)}
+                </td>
                 <td>
                   <button
                     className={styles.confirmNo}
-                    style={{ fontSize: '0.85em' }}
+                    style={{ fontSize: '0.85em', whiteSpace: 'nowrap' }}
                     onClick={() => setConfirmDelete({ id: sub.id, name: sub.name })}
                   >
                     [D]
@@ -206,6 +250,7 @@ function SubprojectPanel({ projectId, projectName, projectDueDate }: SubprojectP
 export function ProjectsPage() {
   const { projects, loading, createProject, updateProject, deleteProject } = useProjects()
   const [selectedIdx, setSelectedIdx] = useState(0)
+  const [showAll, setShowAll] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [addName, setAddName] = useState('')
   const [addType, setAddType] = useState(PROJECT_TYPES[0])
@@ -312,11 +357,19 @@ export function ProjectsPage() {
     [editingField, confirmDelete, showAdd, cancelAdd, handleNavKey]
   )
 
+  const cycleProjectStatus = useCallback(
+    async (id: string, current: (typeof PROJECT_STATUSES)[number]) => {
+      await updateProject(id, { status: cycleStatus(current, PROJECT_STATUSES) })
+    },
+    [updateProject]
+  )
+
   const openEdit = (id: string, field: keyof ProjectDto, value: string) => {
     setEditingField({ id, field, value })
   }
 
-  const selectedProject = projects[selectedIdx]
+  const visibleProjects = showAll ? projects : projects.filter(p => p.status === 'Active')
+  const selectedProject = visibleProjects[selectedIdx]
 
   return (
     <div ref={pageRef} className={styles.page} onKeyDown={handleKeyDown} tabIndex={0}>
@@ -325,6 +378,13 @@ export function ProjectsPage() {
         <span className={styles.hint}>
           {showAdd ? '[ESC] CANCEL' : '[A] ADD  [D] DELETE  [UP/DOWN] SELECT'}
         </span>
+        <button
+          className={styles.hint}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', marginLeft: 'auto' }}
+          onClick={() => setShowAll(v => !v)}
+        >
+          {showAllLabel(showAll)}
+        </button>
       </div>
       {errorMsg && (
         <div className={styles.error} onClick={() => setErrorMsg('')}>
@@ -398,7 +458,7 @@ export function ProjectsPage() {
       )}
       <div className={styles.tableWrap}>
         {loading && <div className={styles.loading}>LOADING...</div>}
-        {!loading && projects.length === 0 && (
+        {!loading && visibleProjects.length === 0 && (
           <div className={styles.empty}>NO PROJECTS - PRESS [A] TO ADD</div>
         )}
         <table className={styles.dataTable}>
@@ -406,12 +466,12 @@ export function ProjectsPage() {
             <tr>
               <th>PROJECT NAME</th>
               <th style={{ width: '20ch' }}>TYPE</th>
-              <th style={{ width: '10ch' }}>STATUS</th>
-              <th style={{ width: '7ch' }}>DUE</th>
+              <th style={{ width: '10ch', whiteSpace: 'nowrap' }}>STATUS</th>
+              <th style={{ width: '9ch', whiteSpace: 'nowrap' }}>DUE</th>
             </tr>
           </thead>
           <tbody>
-            {projects.map((proj, idx) => {
+            {visibleProjects.map((proj, idx) => {
               const overdue = isOverdue(proj.dueDate)
               return (
                 <tr
@@ -448,10 +508,18 @@ export function ProjectsPage() {
                     )}
                   </td>
                   <td>{proj.type}</td>
-                  <td className={proj.status === 'Active' ? styles.active : styles.inactive}>
+                  <td
+                    className={statusClass(proj.status, styles.active, styles.inactive)}
+                    style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    title="Click to change status"
+                    onClick={e => {
+                      e.stopPropagation()
+                      void cycleProjectStatus(proj.id, proj.status)
+                    }}
+                  >
                     {proj.status}
                   </td>
-                  <td style={overdue ? { color: '#ff3333' } : undefined}>
+                  <td style={{ whiteSpace: 'nowrap', ...(overdue ? { color: '#ff3333' } : {}) }}>
                     {formatDue(proj.dueDate)}
                   </td>
                 </tr>

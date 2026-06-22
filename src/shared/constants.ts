@@ -9,7 +9,7 @@ export const PROJECT_TYPES = [
 export type ProjectType = (typeof PROJECT_TYPES)[number]
 
 /** Valid project statuses. */
-export const PROJECT_STATUSES = ['Active', 'Complete', 'Archived'] as const
+export const PROJECT_STATUSES = ['Active', 'Complete', 'Inactive'] as const
 export type ProjectStatus = (typeof PROJECT_STATUSES)[number]
 
 /** Valid staff statuses. */
@@ -25,8 +25,12 @@ export const DELIVERABLE_STATUSES = ['Draft', 'In Review', 'Final'] as const
 export type DeliverableStatus = (typeof DELIVERABLE_STATUSES)[number]
 
 /** Valid task statuses. */
-export const TASK_STATUSES = ['Backlog', 'In Progress', 'Review', 'Closed'] as const
+export const TASK_STATUSES = ['Inactive', 'In Progress', 'Review', 'Complete'] as const
 export type TaskStatus = (typeof TASK_STATUSES)[number]
+
+/** Valid subproject statuses. */
+export const SUBPROJECT_STATUSES = ['Active', 'Complete', 'Inactive'] as const
+export type SubprojectStatus = (typeof SUBPROJECT_STATUSES)[number]
 
 /** Valid task priorities. */
 export const TASK_PRIORITIES = ['Low', 'Normal', 'High', 'Urgent'] as const

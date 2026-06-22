@@ -22,10 +22,12 @@ export function useTasks(filters: TaskListFilters): {
 
   const load = useCallback(() => {
     setLoading(true)
-    apiListTasks(filters).then(data => {
-      setTasks(data)
-      setLoading(false)
-    })
+    apiListTasks(filters)
+      .then(data => {
+        setTasks(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [filters.staffId, filters.projectId, filters.status])
 
   useEffect(() => {

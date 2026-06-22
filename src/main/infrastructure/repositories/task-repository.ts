@@ -180,14 +180,14 @@ function toDto(row: TaskRow): TaskDto {
   }
 }
 
-/** Return true when the given status represents a closed state. */
-function isClosedStatus(status: string): boolean {
-  return status === 'Closed'
+/** Return true when the given status represents a completed state. */
+function isCompleteStatus(status: string): boolean {
+  return status === 'Complete'
 }
 
 /** Build the column patch object for a task update. */
 function buildTaskPatch(input: UpdateTaskInput, current: TaskDto, now: string) {
-  const closedAt = input.status && isClosedStatus(input.status) ? now : current.closedAt
+  const closedAt = input.status && isCompleteStatus(input.status) ? now : current.closedAt
   return {
     title: input.title ?? current.title,
     scope: input.scope ?? current.scope,

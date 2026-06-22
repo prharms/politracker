@@ -47,7 +47,7 @@ const newTask = () => ({
   staffId: STAFF_ID,
   title: 'Check campaign finance',
   scope: 'Full Memo' as const,
-  status: 'Backlog' as const,
+  status: 'Inactive' as const,
   priority: 'Normal' as const,
   dueDate: '2026-11-03'
 })
@@ -89,8 +89,8 @@ describe('TaskRepository', () => {
   it('list filters by status', () => {
     repo.create(newTask())
     repo.create({ ...newTask(), title: 'In progress task', status: 'In Progress' })
-    const backlog = repo.list({ status: 'Backlog' })
-    expect(backlog.every(t => t.status === 'Backlog')).toBe(true)
+    const backlog = repo.list({ status: 'Inactive' })
+    expect(backlog.every(t => t.status === 'Inactive')).toBe(true)
     expect(backlog).toHaveLength(1)
   })
 
@@ -107,8 +107,8 @@ describe('TaskRepository', () => {
   it('updateStatus changes the status and sets closedAt', () => {
     const created = repo.create(newTask())
     const closedAt = new Date().toISOString()
-    const updated = repo.updateStatus(created.id, 'Closed', closedAt)
-    expect(updated.status).toBe('Closed')
+    const updated = repo.updateStatus(created.id, 'Complete', closedAt)
+    expect(updated.status).toBe('Complete')
     expect(updated.closedAt).toBe(closedAt)
   })
 
@@ -133,8 +133,8 @@ describe('TaskRepository', () => {
 
   it('update with Closed status sets closedAt', () => {
     const created = repo.create(newTask())
-    const updated = repo.update(created.id, { status: 'Closed' })
-    expect(updated.status).toBe('Closed')
+    const updated = repo.update(created.id, { status: 'Complete' })
+    expect(updated.status).toBe('Complete')
     expect(updated.closedAt).not.toBeNull()
   })
 

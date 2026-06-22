@@ -29,10 +29,12 @@ export function useSubprojects(projectId: string | null): {
       return
     }
     setLoading(true)
-    apiListSubprojects(projectId).then(data => {
-      setSubprojects(data)
-      setLoading(false)
-    })
+    apiListSubprojects(projectId)
+      .then(data => {
+        setSubprojects(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [projectId])
 
   useEffect(() => {

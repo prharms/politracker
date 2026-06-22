@@ -13,6 +13,7 @@ type SubprojectRow = {
   id: string
   projectId: string
   name: string
+  status: string
   dueDate: string | null
   createdAt: string
 }
@@ -42,6 +43,7 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
       id: randomUUID(),
       projectId: input.projectId,
       name: input.name,
+      status: input.status ?? 'Active',
       dueDate: input.dueDate ?? null,
       createdAt: now
     }
@@ -59,6 +61,7 @@ export class SubprojectRepository implements SubprojectRepositoryPort {
       .update(subprojects)
       .set({
         name: input.name ?? current.name,
+        status: input.status ?? current.status,
         dueDate: input.dueDate !== undefined ? input.dueDate : current.dueDate
       })
       .where(eq(subprojects.id, id))
@@ -100,6 +103,7 @@ function toDto(row: SubprojectRow): SubprojectDto {
     id: row.id,
     projectId: row.projectId,
     name: row.name,
+    status: (row.status ?? 'Active') as SubprojectDto['status'],
     dueDate: row.dueDate,
     createdAt: row.createdAt
   }

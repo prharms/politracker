@@ -7,7 +7,7 @@ const stubTask: TaskDto = {
   id: 'task-1',
   title: 'Research finance disclosures',
   scope: 'Full Memo',
-  status: 'Backlog',
+  status: 'Inactive',
   priority: 'Normal',
   projectId: 'proj-1',
   projectName: 'CA Governor 2026',
