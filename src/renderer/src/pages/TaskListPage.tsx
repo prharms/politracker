@@ -623,7 +623,7 @@ export function TaskListPage() {
               <th style={{ width: '16ch' }}>PROJECT</th>
               <th style={{ width: '12ch' }}>SCOPE</th>
               <th style={{ width: '10ch', whiteSpace: 'nowrap' }}>STATUS</th>
-              <th style={{ width: '8ch' }}>PRI</th>
+              <th style={{ width: '10ch', whiteSpace: 'nowrap' }}>PRI</th>
               <th style={{ width: '8ch' }}>STAFF</th>
               <th style={{ width: '9ch', whiteSpace: 'nowrap' }}>DUE</th>
             </tr>
