@@ -35,9 +35,9 @@ function countOverdue(tasks: TaskDto[]): number {
   return tasks.filter(t => isOverdue(t.dueDate)).length
 }
 
-/** Return all non-default subprojects (name !== "None") for a project. */
+/** Return non-default, non-complete subprojects for a project. */
 function namedSubprojects(projectId: string, subs: SubprojectDto[]): SubprojectDto[] {
-  return subs.filter(s => s.projectId === projectId && s.name !== 'None')
+  return subs.filter(s => s.projectId === projectId && s.name !== 'None' && s.status !== 'Complete')
 }
 
 /** Abbreviate a project type for compact display. */
